@@ -495,9 +495,16 @@ function TariffComparison({ feature, tariffs }: { feature: FeatureKey; tariffs: 
 /* ------------------------------------------------------------------ */
 
 function AudienceTag({ audience }: { audience: "user" | "admin" | "both" }) {
-  const label = audience === "admin" ? "навык чата" : audience === "user" ? "персональный" : "навык чата";
+  const isPersonal = audience === "user";
+  const label = isPersonal ? "персональный" : "навык чата";
   return (
-    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/8 text-muted-foreground font-medium uppercase tracking-wider shrink-0">
+    <span
+      className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider shrink-0"
+      style={{
+        background: isPersonal ? "oklch(0.65 0.18 340 / 0.15)" : "oklch(0.65 0.15 230 / 0.15)",
+        color: isPersonal ? "oklch(0.78 0.14 340)" : "oklch(0.78 0.12 230)",
+      }}
+    >
       {label}
     </span>
   );

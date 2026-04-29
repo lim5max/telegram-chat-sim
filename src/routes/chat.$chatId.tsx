@@ -275,9 +275,9 @@ function featurePlan(c: Chat, fk: FeatureKey): string | null {
     case "voice":
       return c.voice?.plan ?? null;
     case "podcast":
-      return c.chatPodcast?.active ? "$5.99/мес" : null;
+      return c.chatPodcast?.active ? "Pro" : null;
     case "antispam":
-      return c.antispam?.paid ? "$2.49/мес" : c.antispam?.active ? "Free" : null;
+      return c.antispam?.paid ? "Pro" : c.antispam?.active ? "Free" : null;
     default:
       return null;
   }
