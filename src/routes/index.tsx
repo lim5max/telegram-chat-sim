@@ -13,8 +13,10 @@ import {
   ChevronLeft,
   Users,
   AppWindow,
+  X,
 } from "lucide-react";
 import { useChatsStore, type GroupMsg } from "@/store/chats";
+import type { Chat } from "@/data/chats";
 
 const searchSchema = z.object({
   anon: z.string().optional(),
@@ -58,8 +60,11 @@ const initialPrivate: Msg[] = [
     from: "bot",
     time: "09:42",
     text:
-      "👋 Привет! Я — ChatLogix.\n\nСобираю главное из групповых чатов и каждый день присылаю короткое саммари. Больше никакого скролла на 500 сообщений.\n\nЧто умею:\n📝 Ежедневное саммари — короткая выжимка из обсуждений в добавленном чате\n🚀 Super-Summary — одна сводка по всем чатам, лично тебе в ЛС\n\nДобавь меня в чат — и начнем.\nИли просто включи свой Super-Summary",
-    buttons: [{ label: "📱 Открыть Mini App", action: "open-app" }],
+      "👋 Привет! Я — ChatLogix.\n\nПомогаю управлять потоком информации и улучшаю взаимодействие между участниками чатов. Работаю как внутри добавленных чатов, так и лично для вас.\n\nС чего начнём?",
+    buttons: [
+      { label: "📊 Посмотреть, как улучшить чат", action: "onboard-admin" },
+      { label: "✨ Изучить персональные возможности", action: "onboard-user" },
+    ],
   },
 ];
 
@@ -119,7 +124,11 @@ function PrivateChat() {
   const [anonChatId, setAnonChatId] = useState<string | null>(null);
   const [pendingText, setPendingText] = useState("");
   const [ignoringMe, setIgnoringMe] = useState(false);
+  const [showChatPicker, setShowChatPicker] = useState(false);
+  const [onboardChatId, setOnboardChatId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const toggleFeature = useChatsStore((s) => s.toggleFeature);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -151,6 +160,26 @@ function PrivateChat() {
   const pushUser = (text: string) =>
     setMsgs((prev) => [...prev, { id: nextId(), from: "user", time: now(), text }]);
 
+  const handleChatPicked = (chatId: string) => {
+    setShowChatPicker(false);
+    setOnboardChatId(chatId);
+    const target = chats.find((c) => c.id === chatId);
+    if (!target) return;
+
+    const topicEmojis = ["💬", "💡", "📊", "🗂", "📍"];
+    const topicLines = target.topics
+      .map((t, i) => `${topicEmojis[i % topicEmojis.length]} ${t} (**${Math.floor(Math.random() * 40 + 8)} сообщений**)`)
+      .join("\n");
+
+    pushBot({
+      text: `Готово 👌 ChatLogix добавлен в «**${target.name}**»!\n\n🗓 Что обсуждалось вчера\nВсего было написано **${target.used} сообщений**\n\n${topicLines}\n\nСаммари обрабатывает бесплатно до **200 сообщений/день**. Увеличить лимит можно в настройках.\n\nЗавтра тоже автоматически пришлю такое в чат.\nА пока — рекомендую сразу включить антиспам 👇`,
+      buttons: [
+        { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
+        { label: "🛡 Включить антиспам", action: `onboard-admin-antispam:${chatId}` },
+      ],
+    });
+  };
+
   const handleAction = (action: string, label?: string) => {
     if (label) pushUser(label);
     switch (action) {
@@ -158,7 +187,95 @@ function PrivateChat() {
         setTimeout(() => navigate({ to: "/home" }), 200);
         break;
 
-      // ── Личные функции ──
+      // ── Onboarding: Admin flow ──
+      case "onboard-admin":
+        pushBot({
+          text: "Давай покажу, как работает саммари чата. Вот пример — одно саммари за день в чате **«Здоровое питание»**:\n\n🗓 Что обсуждалось вчера 28.04.2026\nВсего было написано **112 сообщений**\n\n🥗 Интервальное голодание 16/8 — опыт участников (**31 сообщение**)\n🏋️ Питание до и после тренировки (**24 сообщения**)\n🧴 Разбор составов протеиновых батончиков (**18 сообщений**)\n📋 Меню на неделю — делимся рецептами (**15 сообщений**)\n\nИнтересные ссылки:\n[Калькулятор КБЖУ онлайн]\n[Подборка рецептов на неделю]\n\nТакое саммари приходит в чат **каждое утро**. Участникам не нужно листать сотни сообщений — всё ключевое в одном посте.\n\nХочешь так же в своём чате?",
+          buttons: [
+            { label: "➕ Добавить бота в чат", action: "onboard-admin-addbot" },
+          ],
+        });
+        break;
+
+      case "onboard-admin-addbot":
+        setShowChatPicker(true);
+        break;
+
+      case "onboard-admin-settings":
+        setTimeout(() => {
+          if (onboardChatId) {
+            navigate({ to: "/chat/$chatId", params: { chatId: onboardChatId } });
+          } else {
+            navigate({ to: "/home" });
+          }
+        }, 200);
+        break;
+
+      // ── Onboarding: User flow ──
+      case "onboard-user": {
+        const summaryChats = chats.filter((c) => c.summary?.active);
+        const superText = summaryChats
+          .slice(0, 4)
+          .map((c) => {
+            const topic = c.topics[0] ?? "Общие обсуждения";
+            return `📌 ${c.name} ${c.emoji ?? ""}\n— ${topic} (${c.used} сообщ.)`.trim();
+          })
+          .join("\n\n");
+
+        pushBot({
+          text: `Покажу, как не читать все чаты и быть в курсе 👇\n\nЭто Super-Summary — одна сводка по всем твоим чатам, каждое утро в личку:\n\n🚀 Твоя сводка за сегодня:\n\n${superText}\n\nВместо десятков чатов — одно сообщение с главным. Бот сам определяет, в каких чатах ты состоишь, и собирает ключевое.\n\nХочешь получать такой каждый день?`,
+          buttons: [
+            { label: "✨ Включить Super-Summary", action: "onboard-user-enable" },
+          ],
+        });
+        break;
+      }
+
+      case "onboard-user-enable":
+        setSuperSummary(true);
+        pushBot({
+          text: "Готово 👌 Super-Summary будет приходить каждый день в 09:00.\n\nЧаты, где вчера было тихо, в отчёт не попадают — только то, где что-то обсуждали.\n\nВот что ещё можно сделать 👇",
+          buttons: [
+            { label: "⚙️ Открыть настройки", action: "open-app" },
+            { label: "🎧 Включить Super Podcast", action: "onboard-user-podcast" },
+            { label: "🕵️ Анонимные сообщения", action: "onboard-user-anon" },
+          ],
+        });
+        break;
+
+      case "onboard-user-podcast":
+        setSuperPodcast(true);
+        pushBot({
+          text: "🎧 Super Podcast включён!\n\nРасширенная версия Super-Summary в аудиоформате. Слушай главное из чатов по дороге на работу или на прогулке.\n\nПервые 16 минут — бесплатно. Первый выпуск придёт завтра вместе с Super-Summary.",
+          buttons: [
+            { label: "⚙️ Открыть настройки", action: "open-app" },
+            { label: "🕵️ Анонимные сообщения", action: "onboard-user-anon" },
+          ],
+        });
+        break;
+
+      case "onboard-user-anon": {
+        const anonAvailable = chats.filter((c) => c.anonymous?.active);
+        if (anonAvailable.length > 0) {
+          pushBot({
+            text: `🕵️ Анонимные сообщения\n\nПиши в чат через бота — никто не узнает, кто автор. Полезно для честной обратной связи, опросов или просто когда хочется сказать правду.\n\nДоступно в ${anonAvailable.length} чатах: ${anonAvailable.map((c) => c.name).join(", ")}`,
+            buttons: [
+              { label: "⚙️ Открыть настройки", action: "open-app" },
+              { label: "🎭 Написать анонимно", action: "anon-start" },
+            ],
+          });
+        } else {
+          pushBot({
+            text: "🕵️ Анонимные сообщения\n\nПиши в чат через бота — никто не узнает, кто автор. Пока нет чатов с включённым навыком. Попроси админа активировать.",
+            buttons: [
+              { label: "⚙️ Открыть настройки", action: "open-app" },
+            ],
+          });
+        }
+        break;
+      }
+
+      // ── Персональные навыки ──
       case "user-settings": {
         const summaryStatus = superSummaryOn ? "включён" : "выключен";
         const podcastStatus = superPodcastOn
@@ -387,6 +504,69 @@ function PrivateChat() {
         break;
 
       default:
+        if (action.startsWith("onboard-admin-antispam:")) {
+          const cid = action.split(":")[1];
+          toggleFeature(cid, "antispam");
+          const target = chats.find((c) => c.id === cid);
+          pushBot({
+            text: `🛡 Антиспам включён в «${target?.name}»!\n\nБот автоматически удаляет спам, рекламу и флуд. Уведомления об удалённых сообщениях приходят тебе в ЛС.\n\nТеперь можно добавить расшифровку голосовых — участники смогут читать вместо того, чтобы слушать.`,
+            buttons: [
+              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
+              { label: "🎤 Включить расшифровку аудио", action: `onboard-admin-voice:${cid}` },
+            ],
+          });
+          break;
+        }
+        if (action.startsWith("onboard-admin-voice:")) {
+          const cid = action.split(":")[1];
+          toggleFeature(cid, "voice");
+          const target = chats.find((c) => c.id === cid);
+          pushBot({
+            text: `🎤 Расшифровка включена в «${target?.name}»!\n\nВсе голосовые и кружочки автоматически переводятся в текст. Бесплатно **37.5 мин/мес**.\n\nЕщё есть подкаст чата — аудио-версия саммари, можно слушать на ходу.`,
+            buttons: [
+              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
+              { label: "🎙 Включить подкаст чата", action: `onboard-admin-podcast:${cid}` },
+            ],
+          });
+          break;
+        }
+        if (action.startsWith("onboard-admin-podcast:")) {
+          const cid = action.split(":")[1];
+          toggleFeature(cid, "podcast");
+          const target = chats.find((c) => c.id === cid);
+          pushBot({
+            text: `🎙 Подкаст включён в «${target?.name}»!\n\nАудио-версия саммари приходит в чат каждое утро. Мужской голос по умолчанию, бесплатная неделя.\n\nПоследнее — база знаний. Участники смогут искать по истории чата через /search.`,
+            buttons: [
+              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
+              { label: "📚 Включить базу знаний", action: `onboard-admin-kb:${cid}` },
+            ],
+          });
+          break;
+        }
+        if (action.startsWith("onboard-admin-kb:")) {
+          const cid = action.split(":")[1];
+          const target = chats.find((c) => c.id === cid);
+          pushBot({
+            text: `📚 База знаний активирована в «${target?.name}»!\n\nИндексация первых **10 000 сообщений** бесплатно, **100 запросов/мес**. Участники пишут /search и получают ответ.\n\nИ последнее — анонимные сообщения. Участники смогут писать через бота, автор скрыт от всех.`,
+            buttons: [
+              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
+              { label: "🎭 Включить анонимные сообщения", action: `onboard-admin-anon:${cid}` },
+            ],
+          });
+          break;
+        }
+        if (action.startsWith("onboard-admin-anon:")) {
+          const cid = action.split(":")[1];
+          toggleFeature(cid, "anonymous");
+          const target = chats.find((c) => c.id === cid);
+          pushBot({
+            text: `🎭 Анонимные сообщения включены в «${target?.name}»!\n\nУчастники пишут через бота, автор скрыт от всех. Лимит — 3 сообщения в день.\n\nВсё настроено! Остальное можно подкрутить в настройках.`,
+            buttons: [
+              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
+            ],
+          });
+          break;
+        }
         if (action.startsWith("anon-pick:")) {
           const id = action.split(":")[1];
           setAnonChatId(id);
@@ -480,7 +660,7 @@ function PrivateChat() {
         <div className="max-w-[640px] mx-auto px-2.5 py-2 grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1.5">
             <ChatMenuBtn
-              label="✨ Личные функции"
+              label="✨ Персональные навыки"
               onClick={() => handleAction("user-settings")}
             />
             <ChatMenuBtn
@@ -494,7 +674,7 @@ function PrivateChat() {
               onClick={() => handleAction("addbot")}
             />
             <ChatMenuBtn
-              label="🛠 Настройки чатов"
+              label="🛠 Настройки в чатах"
               onClick={() => navigate({ to: "/chats" })}
             />
           </div>
@@ -531,6 +711,14 @@ function PrivateChat() {
           </button>
         </div>
       </div>
+
+      {showChatPicker && (
+        <ChatPickerModal
+          chats={chats}
+          onPick={handleChatPicked}
+          onClose={() => setShowChatPicker(false)}
+        />
+      )}
     </>
   );
 }
@@ -738,6 +926,36 @@ function GroupChat() {
   );
 }
 
+function formatText(text: string) {
+  const parts: React.ReactNode[] = [];
+  // Split by **bold** and [blue link] patterns
+  const regex = /(\*\*(.+?)\*\*|\[(.+?)\])/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    if (match[2]) {
+      // **bold**
+      parts.push(<strong key={key++}>{match[2]}</strong>);
+    } else if (match[3]) {
+      // [blue link]
+      parts.push(
+        <span key={key++} className="text-[oklch(0.75_0.14_230)]">
+          {match[3]}
+        </span>
+      );
+    }
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts;
+}
+
 function Dot({ delay = 0 }: { delay?: number }) {
   return (
     <span
@@ -772,7 +990,7 @@ function Bubble({ msg, onAction }: { msg: Msg; onAction: (a: string, label?: str
               : undefined
           }
         >
-          {msg.text}
+          {isSelf ? msg.text : formatText(msg.text)}
           <div
             className={`text-[10px] mt-1 ${
               isSelf ? "text-white/70" : "text-muted-foreground"
@@ -854,6 +1072,60 @@ function GroupBubble({ msg, onAction }: { msg: GroupMsg; onAction: (a: string) =
           >
             {msg.time}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChatPickerModal({
+  chats,
+  onPick,
+  onClose,
+}: {
+  chats: Chat[];
+  onPick: (chatId: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-[340px] rounded-2xl bg-[oklch(0.18_0.01_260)] border border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-4 py-3 flex items-center justify-between border-b border-white/8">
+          <span className="text-[15px] font-semibold">Добавить бота в чат</span>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center text-foreground/60 hover:text-foreground transition"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="py-2 max-h-[320px] overflow-y-auto">
+          {chats.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => onPick(c.id)}
+              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/8 active:bg-white/12 transition text-left"
+            >
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-[14px] shrink-0"
+                style={{ background: c.avatarColor }}
+              >
+                {c.emoji || c.initial}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[14px] font-medium truncate">
+                  {c.name} {c.emoji ?? ""}
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {c.members.toLocaleString("ru")} участников
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
     </div>

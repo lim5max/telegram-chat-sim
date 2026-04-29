@@ -1,10 +1,13 @@
-import { createFileRoute, notFound, Link, Outlet, useMatch } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { createFileRoute, notFound, Outlet, useMatch } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { TopBar } from "@/components/TopBar";
+import { Toggle } from "@/components/Toggle";
 import { useChatsStore } from "@/store/chats";
 import { FEATURE_META, type FeatureKey, type Chat } from "@/data/chats";
-import { ChevronRight, ArrowLeft, TrendingUp } from "lucide-react";
-import { FeatureIcon, FeatureIconBadge, ICON_GRADIENTS } from "@/components/FeatureIcon";
+import { ChevronDown, TrendingUp } from "lucide-react";
+import { FeatureIcon, ICON_GRADIENTS } from "@/components/FeatureIcon";
+import { FeatureSettings } from "@/components/FeatureSettings";
 
 
 export const Route = createFileRoute("/chat/$chatId")({
@@ -31,11 +34,15 @@ function ChatDetails() {
   const { chatId } = Route.useParams();
   const chat = useChatsStore((s) => s.chats.find((c) => c.id === chatId));
   const adminAlerts = useChatsStore((s) => s.adminAlerts[chatId] ?? 0);
+  const toggleFeature = useChatsStore((s) => s.toggleFeature);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [expanded, setExpanded] = useState<FeatureKey | null>(null);
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
     if (hash) {
+      const fk = hash.replace("f-", "") as FeatureKey;
+      if (ALL.includes(fk)) setExpanded(fk);
       const el = sectionRefs.current[hash];
       if (el) {
         setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
@@ -49,6 +56,9 @@ function ChatDetails() {
 
   const activeKeys = ALL.filter((k) => isActive(chat, k));
   const inactiveKeys = ALL.filter((k) => !isActive(chat, k));
+
+  const toggleExpand = (fk: FeatureKey) =>
+    setExpanded((prev) => (prev === fk ? null : fk));
 
   return (
     <div className="min-h-screen pb-24">
@@ -67,21 +77,18 @@ function ChatDetails() {
               <TrendingUp size={11} /> {chat.activityDelta}
             </div>
           </div>
-          <div className="mt-1.5 text-[11px] text-muted-foreground">
-            {chat.used} сообщ./день · {activeKeys.length} активных функций
-          </div>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            <Mini value={chat.members.toLocaleString("ru")} label="участников" />
             <Mini value={String(chat.used)} label="сообщ./день" />
-            <Mini value={String(activeKeys.length)} label="функций вкл." />
+            <Mini value={String(activeKeys.length)} label="навыков вкл." />
+            <Mini value={`+${chat.newMembers}`} label="новых участн." />
           </div>
         </div>
 
         {/* ACTIVE FEATURES */}
-        <SectionTitle>Включённые функции</SectionTitle>
+        <SectionTitle>Включённые навыки</SectionTitle>
         {activeKeys.length === 0 && (
           <div className="text-[13px] text-muted-foreground italic px-1">
-            Пока ни одной включённой функции. Выберите ниже ↓
+            Пока ни одного включённого навыка. Выберите ниже ↓
           </div>
         )}
         <div className="space-y-2">
@@ -90,37 +97,32 @@ function ChatDetails() {
               key={fk}
               fk={fk}
               chat={chat}
+              chatId={chatId}
+              isExpanded={expanded === fk}
+              onToggleExpand={() => toggleExpand(fk)}
+              onToggleFeature={() => toggleFeature(chatId, fk)}
               setRef={(el) => (sectionRefs.current[`f-${fk}`] = el)}
             />
           ))}
         </div>
 
         {/* INACTIVE FEATURES */}
-        {inactiveKeys.length > 0 && <SectionTitle>Доступные функции</SectionTitle>}
+        {inactiveKeys.length > 0 && <SectionTitle>Доступные навыки</SectionTitle>}
         <div className="space-y-2">
           {inactiveKeys.map((fk) => (
             <FeatureCard
               key={fk}
               fk={fk}
               chat={chat}
+              chatId={chatId}
+              isExpanded={expanded === fk}
+              onToggleExpand={() => toggleExpand(fk)}
+              onToggleFeature={() => toggleFeature(chatId, fk)}
               setRef={(el) => (sectionRefs.current[`f-${fk}`] = el)}
             />
           ))}
         </div>
 
-        <Link
-          to="/marketplace"
-          className="mt-2 block w-full text-center py-3 rounded-[18px] bg-white/6 hover:bg-white/10 text-[13px] font-medium text-muted-foreground"
-        >
-          Все функции в каталоге →
-        </Link>
-
-        <Link
-          to="/chats"
-          className="mt-2 flex items-center justify-center gap-2 w-full bg-white/10 hover:bg-white/15 rounded-[18px] py-3.5 font-semibold transition"
-        >
-          <ArrowLeft size={18} /> Все чаты
-        </Link>
       </div>
     </div>
   );
@@ -128,7 +130,7 @@ function ChatDetails() {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-1 pt-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+    <div className="px-1 pt-2 text-[13px] font-semibold text-foreground/70">
       {children}
     </div>
   );
@@ -146,10 +148,18 @@ function Mini({ value, label }: { value: string; label: string }) {
 function FeatureCard({
   fk,
   chat,
+  chatId,
+  isExpanded,
+  onToggleExpand,
+  onToggleFeature,
   setRef,
 }: {
   fk: FeatureKey;
   chat: Chat;
+  chatId: string;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onToggleFeature: () => void;
   setRef: (el: HTMLDivElement | null) => void;
 }) {
   const f = FEATURE_META[fk];
@@ -159,38 +169,65 @@ function FeatureCard({
 
   return (
     <div ref={setRef} id={`f-${fk}`} className="scroll-mt-20">
-      <Link
-        to="/chat/$chatId/feature/$featureKey"
-        params={{ chatId: chat.id, featureKey: fk }}
-        className="glass-card rounded-[18px] p-3.5 flex items-center gap-3 active:scale-[0.99] transition"
-      >
-        <div
-          className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: active ? ICON_GRADIENTS[fk] : "rgba(255,255,255,0.08)" }}
+      <div className="glass-card rounded-[18px] overflow-hidden">
+        {/* Header — tap to expand/collapse */}
+        <button
+          onClick={onToggleExpand}
+          className="w-full p-3.5 flex items-center gap-3 active:scale-[0.99] transition text-left"
         >
-          <FeatureIcon feature={fk} size={20} color={active ? "white" : "currentColor"} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold flex items-center gap-2">
-            {f.label}
-            {badge && (
-              <span
-                className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase"
-                style={{ background: badge.bg, color: badge.color }}
-              >
-                {badge.label}
-              </span>
-            )}
+          <div
+            className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ background: active ? ICON_GRADIENTS[fk] : "rgba(255,255,255,0.08)" }}
+          >
+            <FeatureIcon feature={fk} size={20} color={active ? "white" : "currentColor"} />
           </div>
-          <div className="text-[11px] text-muted-foreground truncate">{status}</div>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {featurePlan(chat, fk) && (
-            <span className="text-[10px] text-muted-foreground">{featurePlan(chat, fk)}</span>
-          )}
-          <ChevronRight size={16} className="text-muted-foreground" />
-        </div>
-      </Link>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold flex items-center gap-2">
+              {f.label}
+              {badge && (
+                <span
+                  className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase"
+                  style={{ background: badge.bg, color: badge.color }}
+                >
+                  {badge.label}
+                </span>
+              )}
+            </div>
+            <div className="text-[11px] text-muted-foreground truncate">{status}</div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {featurePlan(chat, fk) && (
+              <span className="text-[10px] text-muted-foreground">{featurePlan(chat, fk)}</span>
+            )}
+            <ChevronDown
+              size={16}
+              className={`text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+            />
+          </div>
+        </button>
+
+        {/* Expanded content */}
+        {isExpanded && (
+          <div className="px-3.5 pb-4 space-y-4">
+            <div className="h-px bg-white/8" />
+            {/* Master toggle */}
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-medium">
+                {active ? "Включено" : "Отключено"}
+              </span>
+              <Toggle
+                defaultOn={active}
+                onChange={(v) => {
+                  onToggleFeature();
+                  toast(v ? `${f.label} включён` : `${f.label} отключён`);
+                }}
+              />
+            </div>
+            {/* Feature-specific settings */}
+            <FeatureSettings fk={fk} chat={chat} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -217,17 +254,17 @@ function featureStatus(c: Chat, fk: FeatureKey): string {
     case "summary":
       return c.summary?.active ? "Саммари ежедневно в 09:00" : "Отключено";
     case "voice":
-      return c.voice?.active ? "Транскрипция работает" : "Отключено";
+      return c.voice?.active ? "Расшифровка работает" : "Отключено";
     case "podcast":
-      return c.chatPodcast?.active ? c.chatPodcast.status : "Не подключён";
+      return c.chatPodcast?.active ? c.chatPodcast.status : "Отключено";
     case "kb":
       return c.knowledgeBase?.active
         ? `Использовано ${c.knowledgeBase.quotaUsed} из ${c.knowledgeBase.quotaTotal} запросов`
-        : "Не подключена";
+        : "Отключено";
     case "antispam":
       return c.antispam?.active ? `Удалено за 24 ч: ${c.antispam.deleted24h}` : "Отключено";
     case "anonymous":
-      return c.anonymous?.active ? `Отправлено ${c.anonymous.sentToday} из 3 сегодня` : "Не разрешены";
+      return c.anonymous?.active ? `Доступно · 3 в день` : "Отключено";
   }
 }
 
@@ -240,7 +277,7 @@ function featurePlan(c: Chat, fk: FeatureKey): string | null {
     case "podcast":
       return c.chatPodcast?.active ? "$5.99/мес" : null;
     case "antispam":
-      return c.antispam?.paid ? "$2.49/мес" : c.antispam?.active ? "Триал" : null;
+      return c.antispam?.paid ? "$2.49/мес" : c.antispam?.active ? "Free" : null;
     default:
       return null;
   }
@@ -251,7 +288,5 @@ function featureBadge(
   fk: FeatureKey,
 ): { label: string; bg: string; color: string } | null {
   if (isActive(c, fk)) return { label: "ВКЛ", bg: "oklch(0.72 0.16 155 / 0.20)", color: "oklch(0.85 0.15 155)" };
-  if (fk === "podcast") return { label: "ПРОБНЫЙ", bg: "oklch(0.60 0.16 235 / 0.20)", color: "oklch(0.78 0.12 235)" };
-  if (fk === "kb") return { label: "НОВОЕ", bg: "oklch(0.60 0.16 235 / 0.20)", color: "oklch(0.78 0.12 235)" };
   return null;
 }

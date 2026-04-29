@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_tabs/home")({
   head: () => ({
     meta: [
       { title: "Главная — ChatLogix" },
-      { name: "description", content: "Дашборд ChatLogix: чаты, функции, новости." },
+      { name: "description", content: "Дашборд ChatLogix: чаты, навыки, новости." },
     ],
   }),
   component: HomeScreen,
@@ -30,13 +30,14 @@ function HomeScreen() {
   const superPodcastOn = useChatsStore((s) => s.superPodcastOn);
 
   const superPodcastFreeMinutesUsed = useChatsStore((s) => s.superPodcastFreeMinutesUsed);
-  const topChats = chats.slice(0, 4);
+  const adminChats = chats.filter((c) => c.isAdmin);
+  const memberChats = chats.filter((c) => !c.isAdmin);
   const anonChatsCount = chats.filter((c) => c.anonymous?.active).length;
   const freeMinutesLeft = 16 - superPodcastFreeMinutesUsed;
 
   return (
     <div className="px-4 pt-5 space-y-5 max-w-[520px] mx-auto">
-      {/* Header: avatar + name + stats pills */}
+      {/* Header: avatar + name */}
       <div className="flex items-center gap-3">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
@@ -50,7 +51,7 @@ function HomeScreen() {
             всего чатов: <span className="text-white font-semibold">{chats.length}</span>
           </div>
           <div className="px-2.5 py-1.5 rounded-xl bg-white/10 text-[11px] font-medium text-foreground/80">
-            админ: <span className="text-white font-semibold">{chats.filter((c) => c.isAdmin).length}</span>
+            админ: <span className="text-white font-semibold">{adminChats.length}</span>
           </div>
         </div>
       </div>
@@ -71,9 +72,21 @@ function HomeScreen() {
         </button>
       </div>
 
-      {/* Personal features preview */}
+      {/* Admin chats */}
+      {adminChats.length > 0 && (
+        <div>
+          <SectionHeader title="Управляемые чаты" right={<Link to="/chats" className="flex items-center gap-1">Все <ChevronRight size={12} /></Link>} />
+          <div className="space-y-2">
+            {adminChats.slice(0, 3).map((c) => (
+              <ChatRow key={c.id} chat={c} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Personal features */}
       <Link to="/me" className="block">
-        <SectionHeader title="Личные функции" right={<span className="flex items-center gap-1">Открыть <ChevronRight size={12} /></span>} />
+        <SectionHeader title="Персональные навыки" right={<span className="flex items-center gap-1">Открыть <ChevronRight size={12} /></span>} />
         <div className="glass-card rounded-[20px] divide-y divide-white/8">
           <PersonalRow
             icon={<HugeiconsIcon icon={SparklesIcon} size={16} strokeWidth={2} color="white" />}
@@ -99,35 +112,9 @@ function HomeScreen() {
         </div>
       </Link>
 
-      {/* Chats */}
-      <div>
-        <SectionHeader title="Мои чаты" right={<Link to="/chats" className="flex items-center gap-1">Все <ChevronRight size={12} /></Link>} />
-        <div className="space-y-2">
-          {topChats.map((c) => (
-            <Link
-              key={c.id}
-              to="/chat/$chatId"
-              params={{ chatId: c.id }}
-              className="glass-card rounded-[16px] p-3 flex items-center gap-3 active:scale-[0.99] transition"
-            >
-              <ChatAvatar chat={c} size={40} />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm truncate">
-                  {c.name} {c.emoji}
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  {c.used} сообщ./день · {c.plan}
-                </div>
-              </div>
-              <ChevronRight size={16} className="text-muted-foreground" />
-            </Link>
-          ))}
-        </div>
-      </div>
-
       {/* Features catalog */}
       <div>
-        <SectionHeader title="Новые функции" right={<Link to="/marketplace" className="flex items-center gap-1">Все <ChevronRight size={12} /></Link>} />
+        <SectionHeader title="Новые навыки" right={<Link to="/marketplace" className="flex items-center gap-1">Все <ChevronRight size={12} /></Link>} />
         <div className="grid grid-cols-2 gap-2">
           <FeatureCard fk="podcast" />
           <FeatureCard fk="kb" />
@@ -180,11 +167,33 @@ function SectionHeader({ title, right }: { title: string; right?: React.ReactNod
   );
 }
 
+function ChatRow({ chat: c }: { chat: import("@/data/chats").Chat }) {
+  return (
+    <Link
+      to="/chat/$chatId"
+      params={{ chatId: c.id }}
+      className="glass-card rounded-[16px] p-3 flex items-center gap-3 active:scale-[0.99] transition"
+    >
+      <ChatAvatar chat={c} size={40} />
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-sm truncate">
+          {c.name} {c.emoji}
+        </div>
+        <div className="text-[11px] text-muted-foreground">
+          {c.used} сообщ./день · {c.plan}
+        </div>
+      </div>
+      <ChevronRight size={16} className="text-muted-foreground" />
+    </Link>
+  );
+}
+
 function FeatureCard({ fk }: { fk: keyof typeof FEATURE_META }) {
   const f = FEATURE_META[fk];
   return (
     <Link
       to="/marketplace"
+      search={{ feature: fk }}
       className="glass-card rounded-2xl p-3 active:scale-[0.99] transition"
     >
       <FeatureIconBadge feature={fk} size={32} iconSize={16} />

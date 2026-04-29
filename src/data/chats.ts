@@ -155,9 +155,9 @@ export const tariffs = [
 ];
 
 export const voicePlans = [
-  { id: "free", name: "Free Voice", price: "Бесплатно", minutes: "37.5 мин/мес", active: true },
-  { id: "pro", name: "Pro Voice", price: "$16.99/мес", minutes: "375 мин/мес", active: false },
-  { id: "extra", name: "Extra Voice", price: "$53.99/мес", minutes: "1500 мин/мес", active: false },
+  { id: "free", name: "Free", price: "Бесплатно", minutes: "37.5 мин/мес", active: true },
+  { id: "pro", name: "Pro", price: "$16.99/мес", minutes: "375 мин/мес", active: false },
+  { id: "extra", name: "Extra", price: "$53.99/мес", minutes: "1500 мин/мес", active: false },
 ];
 
 export const superPodcast = {
@@ -194,8 +194,8 @@ export const FEATURE_META: Record<
   },
   voice: {
     icon: "🎤",
-    label: "Транскрипция голосовых",
-    short: "Транскрипция",
+    label: "Расшифровка голосовых",
+    short: "Расшифровка",
     desc: "Автоматический перевод голосовых сообщений в текст.",
     price: "от $16.99/мес",
     audience: "both",

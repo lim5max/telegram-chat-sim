@@ -73,18 +73,10 @@ function ProfileScreen() {
       </Link>
 
       <div className="glass-card rounded-[20px] divide-y divide-white/8">
-        <Row icon={<HugeiconsIcon icon={Notification01Icon} size={16} strokeWidth={2} />} label="Уведомления" onClick={() => toast("Уведомления включены. Настройки скоро появятся.")} />
         <Row icon={<HugeiconsIcon icon={Message01Icon} size={16} strokeWidth={2} />} label="Поддержка" onClick={() => toast("Напишите нам: @ChatLogixSupport")} />
         <Row icon={<HugeiconsIcon icon={File02Icon} size={16} strokeWidth={2} />} label="Условия использования" onClick={() => toast("Документ откроется в браузере.")} />
-        <Row icon={<HugeiconsIcon icon={HelpCircleIcon} size={16} strokeWidth={2} />} label="Частые вопросы" onClick={() => toast("Ответы на частые вопросы: chatlogix.com/faq")} />
       </div>
 
-      <Link
-        to="/"
-        className="glass-card rounded-[18px] p-4 flex items-center justify-center gap-2 text-[14px] font-medium text-[oklch(0.78_0.18_25)] hover:bg-white/8"
-      >
-        <HugeiconsIcon icon={Logout01Icon} size={16} strokeWidth={2} /> Открыть Telegram
-      </Link>
     </div>
   );
 }

@@ -11,8 +11,8 @@ import {
 const tabs: { to: "/home" | "/chats" | "/marketplace" | "/me" | "/profile"; label: string; icon: typeof Home01Icon }[] = [
   { to: "/home", label: "Главная", icon: Home01Icon },
   { to: "/chats", label: "Чаты", icon: MessageMultiple01Icon },
-  { to: "/marketplace", label: "Каталог", icon: GridIcon },
-  { to: "/me", label: "Личное", icon: SparklesIcon },
+  { to: "/marketplace", label: "Все навыки", icon: GridIcon },
+  { to: "/me", label: "Твои навыки", icon: SparklesIcon },
   { to: "/profile", label: "Профиль", icon: UserIcon },
 ];
 

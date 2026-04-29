@@ -1,5 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
+import { z } from "zod";
 import { toast } from "sonner";
 import { FEATURE_META, type FeatureKey, type Monetization } from "@/data/chats";
 import { useChatsStore } from "@/store/chats";
@@ -30,13 +31,15 @@ import {
   IncognitoIcon,
   LimitationIcon,
   Camera01Icon,
+  ArrowRight01Icon,
 } from "@hugeicons/core-free-icons";
 
 export const Route = createFileRoute("/_tabs/marketplace")({
+  validateSearch: z.object({ feature: z.string().optional() }).parse,
   head: () => ({
     meta: [
       { title: "Каталог — ChatLogix" },
-      { name: "description", content: "Все функции ChatLogix: добавляй в чаты или подключай лично." },
+      { name: "description", content: "Все навыки ChatLogix: добавляй в чаты или подключай лично." },
     ],
   }),
   component: MarketplaceScreen,
@@ -49,57 +52,57 @@ export const Route = createFileRoute("/_tabs/marketplace")({
 const FEATURE_DETAILS: Record<FeatureKey, { items: { icon: typeof CheckListIcon; title: string; subtitle: string }[]; trialText?: string }> = {
   summary: {
     items: [
-      { icon: CheckListIcon, title: "Структурированная сводка", subtitle: "Темы, описания, ссылки" },
-      { icon: AlarmClockIcon, title: "По расписанию", subtitle: "Ежедневно, еженедельно или ежемесячно" },
-      { icon: PinIcon, title: "Авто-пин", subtitle: "Закрепляет последнее саммари" },
-      { icon: Link01Icon, title: "Ссылки в саммари", subtitle: "Внешние URL из обсуждений" },
-      { icon: BlockedIcon, title: "Спам-фильтр", subtitle: "Фильтрация флуда при генерации" },
+      { icon: CheckListIcon, title: "Структурированная сводка", subtitle: "Темы с описанием, ключевые решения и ссылки на сообщения" },
+      { icon: AlarmClockIcon, title: "Гибкое расписание", subtitle: "Ежедневно, еженедельно или ежемесячно в выбранное время" },
+      { icon: PinIcon, title: "Авто-пин", subtitle: "Закрепляет саммари в чате, чтобы не потерялось" },
+      { icon: Link01Icon, title: "Ссылки из обсуждений", subtitle: "Собирает внешние URL, которыми делились участники" },
+      { icon: BlockedIcon, title: "Фильтрация спама", subtitle: "Игнорирует флуд и мусор при генерации сводки" },
     ],
   },
   voice: {
     items: [
-      { icon: Mic01Icon, title: "Голосовые в текст", subtitle: "Автоматическая расшифровка" },
-      { icon: Video01Icon, title: "Видео-кружочки", subtitle: "Транскрибация video_note" },
-      { icon: BrainIcon, title: "Подавление галлюцинаций", subtitle: "Фильтр шума Whisper API" },
-      { icon: SecurityCheckIcon, title: "Модерация контента", subtitle: "LLM-проверка расшифровок" },
+      { icon: Mic01Icon, title: "Голосовые в текст", subtitle: "Расшифровка появляется под сообщением автоматически" },
+      { icon: Video01Icon, title: "Видео-кружочки", subtitle: "Транскрибация кружочков наравне с голосовыми" },
+      { icon: BrainIcon, title: "Подавление галлюцинаций", subtitle: "Фильтр шума — убирает артефакты Whisper API" },
+      { icon: SecurityCheckIcon, title: "Модерация контента", subtitle: "LLM-проверка расшифровок перед публикацией" },
     ],
     trialText: "37.5 бесплатных минут в месяц",
   },
   podcast: {
     items: [
-      { icon: PodcastIcon, title: "Голосовое саммари", subtitle: "Расширенная версия в аудио" },
-      { icon: VoiceIdIcon, title: "Выбор голоса", subtitle: "Onyx (муж.) или Shimmer (жен.)" },
-      { icon: StopWatchIcon, title: "До 2 минут", subtitle: "Компактный выпуск каждый день" },
-      { icon: ArrowReloadHorizontalIcon, title: "Автоматически", subtitle: "Приходит сразу после саммари" },
+      { icon: PodcastIcon, title: "Аудио-версия саммари", subtitle: "Расширенная голосовая выжимка обсуждений чата" },
+      { icon: VoiceIdIcon, title: "Выбор голоса", subtitle: "Мужской или женский — переключается в настройках" },
+      { icon: StopWatchIcon, title: "До 4 минут на выпуск", subtitle: "Компактный формат, удобно слушать на ходу" },
+      { icon: ArrowReloadHorizontalIcon, title: "Приходит автоматически", subtitle: "Выпуск в чате каждое утро сразу после текстового саммари" },
     ],
     trialText: "Бесплатная неделя при активации",
   },
   kb: {
     items: [
-      { icon: Search01Icon, title: "Поиск по истории", subtitle: "До 10 000 сообщений бесплатно" },
-      { icon: BubbleChatIcon, title: "Команда /search", subtitle: "Прямо в групповом чате" },
-      { icon: BarChartIcon, title: "Ранжирование", subtitle: "По свежести и обсуждаемости" },
-      { icon: ArrowReloadHorizontalIcon, title: "Автопополнение", subtitle: "Новые сообщения индексируются" },
+      { icon: Search01Icon, title: "Поиск по истории", subtitle: "Парсинг до 10 000 последних сообщений при активации" },
+      { icon: BubbleChatIcon, title: "Команда /search", subtitle: "Участники спрашивают прямо в чате, бот отвечает публично" },
+      { icon: BarChartIcon, title: "Умное ранжирование", subtitle: "Приоритет у свежих и обсуждаемых тредов" },
+      { icon: ArrowReloadHorizontalIcon, title: "Автопополнение", subtitle: "Новые сообщения индексируются автоматически" },
     ],
     trialText: "100 запросов в месяц бесплатно",
   },
   antispam: {
     items: [
-      { icon: BlockedIcon, title: "Умный фильтр мата", subtitle: "Детект обходов и лит-спика" },
-      { icon: BarChartIcon, title: "Слоу-мод по токсичности", subtitle: "Realtime метрика 0–100" },
-      { icon: FlashIcon, title: "Антифлуд", subtitle: "N сообщений за X минут" },
-      { icon: HashtagIcon, title: "Кастомные стоп-слова", subtitle: "Свой список фраз" },
-      { icon: Image01Icon, title: "Удаление медиа-типов", subtitle: "Стикеры, кружки, голос..." },
-      { icon: ChartIncreaseIcon, title: "Еженедельный отчёт", subtitle: "Активность, топ, токсичность" },
+      { icon: BlockedIcon, title: "Умный фильтр мата", subtitle: "LLM-детект обходов, транслита и лит-спика" },
+      { icon: BarChartIcon, title: "Слоу-мод по токсичности", subtitle: "Автоматическое ограничение при высокой токсичности" },
+      { icon: FlashIcon, title: "Антифлуд", subtitle: "Блокировка при 5 одинаковых за 10 мин или 10 подряд за 30 сек" },
+      { icon: HashtagIcon, title: "Кастомные стоп-слова", subtitle: "Свой список запрещённых фраз, до 20 бесплатно" },
+      { icon: Image01Icon, title: "Фильтрация медиа", subtitle: "Удаление стикеров, гифок, кружочков, пересланных" },
+      { icon: ChartIncreaseIcon, title: "Еженедельный отчёт", subtitle: "Статистика: удалено, ограничено, топ нарушителей" },
     ],
-    trialText: "30 дней бесплатно — все фичи",
+    trialText: "Free-тариф — базовая защита навсегда",
   },
   anonymous: {
     items: [
-      { icon: IncognitoIcon, title: "Анонимная отправка", subtitle: "Бот публикует от своего имени" },
-      { icon: LimitationIcon, title: "Лимит 3/день на чат", subtitle: "Жёсткое ограничение" },
-      { icon: SecurityCheckIcon, title: "Модерация", subtitle: "OpenAI проверяет контент" },
-      { icon: Camera01Icon, title: "Медиа по решению админа", subtitle: "Фото, видео, документы" },
+      { icon: IncognitoIcon, title: "Анонимная отправка", subtitle: "Бот публикует сообщение от своего имени, автор скрыт" },
+      { icon: LimitationIcon, title: "Лимит 3 в день", subtitle: "На каждый чат — защита от злоупотреблений" },
+      { icon: SecurityCheckIcon, title: "Модерация", subtitle: "Контент проверяется перед публикацией" },
+      { icon: Camera01Icon, title: "Медиа по решению админа", subtitle: "Админ решает, можно ли отправлять фото и видео" },
     ],
   },
 };
@@ -109,17 +112,43 @@ const FEATURE_DETAILS: Record<FeatureKey, { items: { icon: typeof CheckListIcon;
 /* ------------------------------------------------------------------ */
 
 const ACCENT_COLORS: Record<FeatureKey, string> = {
-  summary: "oklch(0.68 0.14 225)",
-  voice: "oklch(0.68 0.16 155)",
-  podcast: "oklch(0.68 0.18 15)",
-  kb: "oklch(0.72 0.16 65)",
-  antispam: "oklch(0.60 0.14 250)",
-  anonymous: "oklch(0.58 0.06 230)",
+  summary: "oklch(0.65 0.15 230)",
+  voice: "oklch(0.65 0.18 340)",
+  podcast: "oklch(0.65 0.15 230)",
+  kb: "oklch(0.65 0.15 230)",
+  antispam: "oklch(0.60 0.15 230)",
+  anonymous: "oklch(0.65 0.18 340)",
 };
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                         */
 /* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/*  Tariff plans per feature                                           */
+/* ------------------------------------------------------------------ */
+
+const FEATURE_TARIFFS: Partial<Record<FeatureKey, { name: string; price: string; limit: string }[]>> = {
+  summary: [
+    { name: "Nano", price: "Бесплатно", limit: "до 200 сообщений/день на чат" },
+    { name: "Standard", price: "$2.49/мес", limit: "до 500 сообщений/день на чат" },
+    { name: "Full-on", price: "$4.99/мес", limit: "до 1 000 сообщений/день на чат" },
+    { name: "Contributor", price: "$99.9/мес", limit: "безлимит на все чаты + ранний доступ" },
+  ],
+  voice: [
+    { name: "Free", price: "Бесплатно", limit: "до 37.5 мин/мес на чат" },
+    { name: "Pro", price: "$16.99/мес", limit: "до 375 мин/мес на чат" },
+    { name: "Extra", price: "$53.99/мес", limit: "до 1500 мин/мес на чат" },
+  ],
+  podcast: [
+    { name: "Free", price: "Бесплатно", limit: "пробная неделя" },
+    { name: "Pro", price: "$5.99/мес", limit: "ежедневные выпуски, выбор голоса" },
+  ],
+  antispam: [
+    { name: "Free", price: "Бесплатно", limit: "базовая защита от спама и флуда" },
+    { name: "Pro", price: "$2.49/мес", limit: "LLM-фильтр, кастомная капча, отчёты" },
+  ],
+};
 
 const FILTERS = [
   { id: "all", label: "Все", audience: null as null | "user" | "admin" },
@@ -138,9 +167,12 @@ type Status = "free" | "freemium" | "paid" | "active" | "trial";
 /* ------------------------------------------------------------------ */
 
 function MarketplaceScreen() {
+  const { feature: featureParam } = Route.useSearch();
   const [filter, setFilter] = useState<typeof FILTERS[number]>(FILTERS[0]);
   const [pickerFor, setPickerFor] = useState<FeatureKey | null>(null);
-  const [selectedFeature, setSelectedFeature] = useState<FeatureKey | null>(null);
+  const [selectedFeature, setSelectedFeature] = useState<FeatureKey | null>(
+    featureParam && FEATURES.includes(featureParam as FeatureKey) ? (featureParam as FeatureKey) : null
+  );
 
   const chats = useChatsStore((s) => s.chats);
 
@@ -178,8 +210,8 @@ function MarketplaceScreen() {
   return (
     <div className="px-4 pt-5 pb-6 space-y-4 max-w-[520px] mx-auto">
       <h1 className="text-2xl font-bold">Каталог</h1>
-      <p className="text-[12px] text-muted-foreground -mt-2">
-        Все функции ChatLogix. Нажмите на карточку для подробностей.
+      <p className="text-[13px] text-muted-foreground -mt-2">
+        Все навыки ChatLogix. Нажмите на карточку для подробностей.
       </p>
 
       {/* Filter tabs */}
@@ -210,7 +242,6 @@ function MarketplaceScreen() {
             >
 
               <div className="relative p-4">
-                {/* Header: icon + name + price */}
                 <div className="flex items-start gap-3.5">
                   <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
@@ -235,24 +266,13 @@ function MarketplaceScreen() {
                           NEW
                         </span>
                       )}
+                      <AudienceTag audience={f.audience} />
                     </div>
-                    <AudienceTag audience={f.audience} />
+                    <div className="text-[12px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                      {f.desc}
+                    </div>
                   </div>
-                  {/* Price pill — top right */}
-                  <div
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold shrink-0"
-                    style={{
-                      background: "oklch(1 0 0 / 0.08)",
-                      color: "oklch(0.78 0.02 230)",
-                    }}
-                  >
-                    {f.price}
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="text-[12px] text-muted-foreground mt-2.5 line-clamp-2 leading-relaxed pl-[3.375rem]">
-                  {f.desc}
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2} className="text-muted-foreground shrink-0" />
                 </div>
               </div>
             </button>
@@ -290,7 +310,7 @@ function FeatureDetailView({
   const chats = useChatsStore((s) => s.chats);
 
   const audienceLabel =
-    f.audience === "admin" ? "Для администраторов" : f.audience === "user" ? "Для участников" : "Для всех";
+    f.audience === "admin" ? "Навык чата" : f.audience === "user" ? "Персональный навык" : "Навык чата";
 
   const handleCtaClick = () => {
     if (status === "active") {
@@ -301,7 +321,7 @@ function FeatureDetailView({
           params: { chatId: target.id, featureKey: feature },
         });
       } else {
-        toast("Откройте чат, чтобы настроить функцию");
+        toast("Откройте чат, чтобы настроить навык");
       }
     } else {
       onActivate();
@@ -323,9 +343,10 @@ function FeatureDetailView({
 
       {/* Hero card */}
       <div
-        className="rounded-[24px] p-6 relative overflow-hidden"
+        className="glass-card rounded-[24px] p-6 relative overflow-hidden"
         style={{
-          background: `linear-gradient(160deg, ${ACCENT_COLORS[feature]}33 0%, transparent 60%), var(--gradient-card)`,
+          background: `linear-gradient(160deg, ${ACCENT_COLORS[feature]}25 0%, transparent 50%), oklch(0.22 0.02 240 / 0.85)`,
+          border: `1px solid oklch(1 0 0 / 0.08)`,
         }}
       >
         {/* Decorative glow */}
@@ -345,8 +366,10 @@ function FeatureDetailView({
             <FeatureIcon feature={feature} size={32} color="white" />
           </div>
           <div className="mt-4">
-            <h2 className="text-xl font-bold">{f.label}</h2>
-            <div className="text-[12px] text-muted-foreground mt-1">{audienceLabel}</div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold">{f.label}</h2>
+              <AudienceTag audience={f.audience} />
+            </div>
           </div>
           <p className="text-[13px] text-muted-foreground mt-3 leading-relaxed">{f.desc}</p>
         </div>
@@ -367,7 +390,7 @@ function FeatureDetailView({
             </div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
               {status === "active"
-                ? "Функция подключена в одном или нескольких чатах"
+                ? "Навык подключён в одном или нескольких чатах"
                 : f.monetization === "free"
                   ? "Включить в чате без ограничений"
                   : "Все фичи без ограничений"}
@@ -381,6 +404,11 @@ function FeatureDetailView({
           </button>
         </div>
       </div>
+
+      {/* Tariff comparison */}
+      {FEATURE_TARIFFS[feature] && (
+        <TariffComparison feature={feature} tariffs={FEATURE_TARIFFS[feature]!} />
+      )}
 
       {/* What's inside */}
       <div>
@@ -421,13 +449,55 @@ function FeatureDetailView({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Tariff comparison                                                  */
+/* ------------------------------------------------------------------ */
+
+function TariffComparison({ feature, tariffs }: { feature: FeatureKey; tariffs: { name: string; price: string; limit: string }[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        onClick={() => setOpen(!open)}
+        className="glass-card rounded-[20px] p-4 w-full flex items-center justify-between"
+      >
+        <span className="text-[13px] font-semibold">Сравнить тарифы</span>
+        <svg
+          className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="glass-card rounded-[20px] overflow-hidden divide-y divide-white/5">
+          {tariffs.map((t) => (
+            <div key={t.name} className="p-4 flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: `${ACCENT_COLORS[feature]}18` }}
+              >
+                <FeatureIcon feature={feature} size={18} color={ACCENT_COLORS[feature]} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold">{t.name}</div>
+                <div className="text-[11px] text-muted-foreground">{t.price} · {t.limit}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Audience tag                                                      */
 /* ------------------------------------------------------------------ */
 
 function AudienceTag({ audience }: { audience: "user" | "admin" | "both" }) {
-  const label = audience === "admin" ? "для админов" : audience === "user" ? "для меня" : "для всех";
+  const label = audience === "admin" ? "навык чата" : audience === "user" ? "персональный" : "навык чата";
   return (
-    <span className="text-[10px] text-muted-foreground mt-0.5 block">
+    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/8 text-muted-foreground font-medium uppercase tracking-wider shrink-0">
       {label}
     </span>
   );
@@ -440,6 +510,7 @@ function AudienceTag({ audience }: { audience: "user" | "admin" | "both" }) {
 function ChatPickerModal({ feature, onClose }: { feature: FeatureKey; onClose: () => void }) {
   const chats = useChatsStore((s) => s.chats);
   const toggleFeature = useChatsStore((s) => s.toggleFeature);
+  const navigate = useNavigate();
   const f = FEATURE_META[feature];
 
   return (
@@ -456,16 +527,20 @@ function ChatPickerModal({ feature, onClose }: { feature: FeatureKey; onClose: (
           <div className="text-[12px] text-muted-foreground">Выберите чат для подключения</div>
         </div>
         <div className="space-y-2">
-          {chats.map((c) => {
+          {chats.filter((c) => c.isAdmin).map((c) => {
             const already = isActive(c, feature);
             return (
               <button
                 key={c.id}
                 disabled={already}
                 onClick={() => {
-                  toggleFeature(c.id, feature);
-                  toast.success(`«${f.label}» включён в «${c.name}»`);
+                  if (!already) toggleFeature(c.id, feature);
                   onClose();
+                  navigate({
+                    to: "/chat/$chatId",
+                    params: { chatId: c.id },
+                    hash: `f-${feature}`,
+                  });
                 }}
                 className="w-full glass-card rounded-2xl p-3 flex items-center gap-3 active:scale-[0.99] disabled:opacity-50"
               >

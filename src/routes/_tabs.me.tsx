@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_tabs/me")({
   head: () => ({
     meta: [
       { title: "Личное — ChatLogix" },
-      { name: "description", content: "Личные функции ChatLogix: Super-Summary, Super Podcast, анонимные сообщения." },
+      { name: "description", content: "Персональные навыки ChatLogix: Super-Summary, Super Podcast, анонимные сообщения." },
     ],
   }),
   component: ForMeScreen,
@@ -43,7 +43,7 @@ function ForMeScreen() {
     <div className="px-4 pt-5 space-y-3 max-w-[520px] mx-auto">
       <h1 className="text-2xl font-bold">Личное</h1>
       <p className="text-[12px] text-muted-foreground -mt-1">
-        Персональные функции — не привязаны к конкретному чату.
+        Персональные навыки — не привязаны к конкретному чату.
       </p>
 
       {/* Super-Summary */}
@@ -142,15 +142,15 @@ function ForMeScreen() {
             <div className="flex items-center justify-between">
               <div className="text-[12px] text-muted-foreground">Голос</div>
               <div className="flex gap-1.5">
-                {(["Onyx", "Shimmer"] as const).map((v) => (
+                {([{ id: "Onyx", label: "Мужской" }, { id: "Shimmer", label: "Женский" }] as const).map((v) => (
                   <button
-                    key={v}
-                    onClick={() => isPaidSubscription ? toast(`Голос: ${v}`) : toast("Доступно с подпиской")}
+                    key={v.id}
+                    onClick={() => isPaidSubscription ? toast(`Голос: ${v.label.toLowerCase()}`) : toast("Доступно с подпиской")}
                     className={`text-[12px] px-3 py-1.5 rounded-lg transition ${
-                      v === "Onyx" ? "bg-white/15 text-white" : "bg-white/6 text-muted-foreground"
+                      v.id === "Onyx" ? "bg-white/15 text-white" : "bg-white/6 text-muted-foreground"
                     }`}
                   >
-                    {v}
+                    {v.label}
                   </button>
                 ))}
               </div>
@@ -212,7 +212,7 @@ function ForMeScreen() {
               {anonChats.length > 0 && <OnBadge />}
             </div>
             <div className="text-[11px] text-muted-foreground truncate">
-              {anonChats.length > 0 ? `Доступно в ${anonChats.length} чатах · ${totalAnon}/3 сегодня` : "Нет доступных чатов"}
+              {anonChats.length > 0 ? `Доступно в ${anonChats.length} чатах` : "Нет доступных чатов"}
             </div>
           </div>
           <ChevronDown size={16} className={`text-muted-foreground transition-transform ${expanded === "anonymous" ? "rotate-180" : ""}`} />
@@ -221,10 +221,7 @@ function ForMeScreen() {
         {expanded === "anonymous" && (
           <div className="px-4 pb-4 pt-1 space-y-3 border-t border-white/5">
             <div className="text-[13px] text-muted-foreground">
-              Отправьте сообщение через бота — автор скрыт от всех. Лимит: 3 в день.
-            </div>
-            <div className="text-[12px]">
-              Отправлено сегодня: <span className="font-semibold">{totalAnon}</span> / 3
+              Отправьте сообщение через бота — автор скрыт от всех. Лимит: 3 в день на чат.
             </div>
             {anonChats.length > 0 && (
               <>
@@ -253,7 +250,7 @@ function ForMeScreen() {
             )}
             {anonChats.length === 0 && (
               <div className="text-[12px] text-muted-foreground italic">
-                Включите «Анонимные сообщения» в каталоге функций.
+                Включите «Анонимные сообщения» в каталоге навыков.
               </div>
             )}
           </div>
