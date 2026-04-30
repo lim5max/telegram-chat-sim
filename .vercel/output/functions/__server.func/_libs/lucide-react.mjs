@@ -75,18 +75,13 @@ const createLucideIcon = (iconName, iconNode) => {
   Component.displayName = toPascalCase(iconName);
   return Component;
 };
-const __iconNode$i = [
+const __iconNode$h = [
   ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }],
   ["path", { d: "M10 4v4", key: "pp8u80" }],
   ["path", { d: "M2 8h20", key: "d11cs7" }],
   ["path", { d: "M6 4v4", key: "1svtjw" }]
 ];
-const AppWindow = createLucideIcon("app-window", __iconNode$i);
-const __iconNode$h = [
-  ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
-  ["path", { d: "M19 12H5", key: "x3x0zl" }]
-];
-const ArrowLeft = createLucideIcon("arrow-left", __iconNode$h);
+const AppWindow = createLucideIcon("app-window", __iconNode$h);
 const __iconNode$g = [
   ["path", { d: "M12 8V4H8", key: "hb8ula" }],
   ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
@@ -216,9 +211,8 @@ export {
   Paperclip as b,
   Smile as c,
   Send as d,
-  ArrowLeft as e,
+  ChevronDown as e,
   ChevronRight as f,
-  ChevronDown as g,
-  Play as h,
-  TriangleAlert as i
+  Play as g,
+  TriangleAlert as h
 };

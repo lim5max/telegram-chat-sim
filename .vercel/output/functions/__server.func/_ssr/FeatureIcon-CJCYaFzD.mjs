@@ -1,5 +1,5 @@
 import { j as jsxRuntimeExports } from "../_libs/react.mjs";
-import { M as ME, y as oir, A as Iu, U as U6, m as U$, W as Wy } from "../_libs/hugeicons__core-free-icons.mjs";
+import { M as ME, w as oir, x as Iu, U as U6, k as U$, W as Wy } from "../_libs/hugeicons__core-free-icons.mjs";
 import { H as HugeiconsIcon } from "../_libs/hugeicons__react.mjs";
 const FEATURE_ICON_DATA = {
   summary: Wy,
