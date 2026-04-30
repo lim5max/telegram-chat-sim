@@ -176,20 +176,34 @@ function ForMeScreen() {
               </div>
             </div>
 
-            {/* Subscription */}
-            <div className="flex items-center justify-between text-[12px]">
-              <span className="text-muted-foreground">
-                {isPaidSubscription ? `Подписка до ${superPodcastSubscription.expiresAt}` : `${freeMinutesLeft} из 16 бесплатных мин`}
-              </span>
+            {/* Usage & Subscription */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[12px] mb-1">
+                <span className="text-muted-foreground">Использовано</span>
+                <span className="font-semibold">
+                  {isPaidSubscription ? `Подписка до ${superPodcastSubscription.expiresAt}` : `${16 - freeMinutesLeft} из 16 бесплатных мин`}
+                </span>
+              </div>
               {!isPaidSubscription && (
-                <button
-                  onClick={() => toast.success("Ссылка на оплату создана")}
-                  className="px-3 py-1.5 rounded-lg gradient-primary text-white font-semibold text-[11px]"
-                >
-                  {superPodcast.price}
-                </button>
+                <div className="h-1.5 w-full bg-white/8 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.max(((16 - freeMinutesLeft) / 16) * 100, 2)}%`,
+                      background: freeMinutesLeft <= 4 ? "oklch(0.65 0.22 25)" : "var(--gradient-primary)",
+                    }}
+                  />
+                </div>
               )}
             </div>
+            {!isPaidSubscription && (
+              <button
+                onClick={() => toast.success("Ссылка на оплату создана")}
+                className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
+              >
+                Перейти на Super Podcast · $5.99/мес
+              </button>
+            )}
           </div>
         )}
       </div>

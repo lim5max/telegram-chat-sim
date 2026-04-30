@@ -38,26 +38,45 @@ export function FeatureSettings({ fk, chat }: { fk: FeatureKey; chat: Chat }) {
       return <SummarySettings chat={chat} />;
     case "voice": {
       const vPlan = chat.voice?.plan ?? "Free";
-      const vLimit = vPlan === "Pro" ? "300 мин/мес" : vPlan === "Ultra" ? "Безлимит" : "37.5 мин/мес";
+      const vLimitNum = vPlan === "Pro" ? 300 : vPlan === "Ultra" ? 0 : 30;
+      const vLimit = vPlan === "Ultra" ? "Безлимит" : `${vLimitNum} мин/мес`;
       const vPrice = vPlan === "Pro" ? "$16.99/мес" : vPlan === "Ultra" ? "$49.99/мес" : "Бесплатно";
+      const vUsed = Math.floor(Math.random() * (vLimitNum * 0.6));
+      const vPct = vLimitNum > 0 ? Math.min((vUsed / vLimitNum) * 100, 100) : 0;
       return (
         <>
           <div className="glass-card rounded-[20px] p-4 space-y-3">
             <SectionLabel>Текущий тариф</SectionLabel>
             <div>
               <div className="flex items-center justify-between">
-                <div className="text-[15px] font-bold">{vPlan}</div>
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                  style={{ background: "oklch(0.72 0.16 155 / 0.15)", color: "oklch(0.85 0.15 155)" }}
-                >
-                  Активен
-                </span>
+                <div className="text-[16px] font-bold">{vPlan}</div>
+                {vPlan !== "Free" && chat.planUntil && (
+                  <span className="text-[11px] text-muted-foreground">до {chat.planUntil}</span>
+                )}
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5">
+              <div className="text-[13px] text-muted-foreground mt-1">
                 {vPrice} · {vLimit}
               </div>
             </div>
+            {vPlan !== "Ultra" && (
+              <div>
+                <div className="flex items-center justify-between text-[11px] mb-1">
+                  <span className="text-muted-foreground">Использовано</span>
+                  <span className={vPct > 90 ? "text-[oklch(0.82_0.17_25)] font-semibold" : "font-semibold"}>
+                    {vUsed} из {vLimitNum} мин
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-white/8 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${Math.max(vPct, 2)}%`,
+                      background: vPct > 90 ? "oklch(0.65 0.22 25)" : "var(--gradient-primary)",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
             {vPlan !== "Ultra" && (
               <button
                 onClick={() => toast.success("Ссылка на оплату создана")}
@@ -80,19 +99,25 @@ export function FeatureSettings({ fk, chat }: { fk: FeatureKey; chat: Chat }) {
             <SectionLabel>Текущий тариф</SectionLabel>
             <div>
               <div className="flex items-center justify-between">
-                <div className="text-[15px] font-bold">{cp?.active ? "Pro" : "Free"}</div>
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                  style={{ background: "oklch(0.72 0.16 155 / 0.15)", color: "oklch(0.85 0.15 155)" }}
-                >
-                  Активен
-                </span>
+                <div className="text-[16px] font-bold">{cp?.status?.includes("Активна") ? "Pro" : "Free"}</div>
+                {cp?.status && (
+                  <span className="text-[11px] text-muted-foreground">
+                    {cp.status}
+                  </span>
+                )}
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5">
-                {cp?.active ? "$5.99/мес" : "Бесплатно"} · аудио-версия саммари каждое утро
-                {cp?.status ? ` · ${cp.status.toLowerCase()}` : ""}
+              <div className="text-[13px] text-muted-foreground mt-1">
+                {cp?.status?.includes("Активна") ? "$2.99/мес · безлимит" : "Бесплатно · 16 минут"} · аудио-версия саммари каждое утро
               </div>
             </div>
+            {!cp?.status?.includes("Активна") && (
+              <button
+                onClick={() => toast.success("Ссылка на оплату создана")}
+                className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
+              >
+                Перейти на Pro · $2.99/мес
+              </button>
+            )}
           </div>
 
           <div className="glass-card rounded-[20px] p-4 space-y-3">
@@ -150,15 +175,9 @@ export function FeatureSettings({ fk, chat }: { fk: FeatureKey; chat: Chat }) {
             <SectionLabel>Текущий тариф</SectionLabel>
             <div>
               <div className="flex items-center justify-between">
-                <div className="text-[15px] font-bold">Knowledge Base Free</div>
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                  style={{ background: "oklch(0.72 0.16 155 / 0.15)", color: "oklch(0.85 0.15 155)" }}
-                >
-                  Активен
-                </span>
+                <div className="text-[16px] font-bold">Knowledge Base Free</div>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5">
+              <div className="text-[13px] text-muted-foreground mt-1">
                 Бесплатно · {kb.quotaTotal} запросов/мес
               </div>
             </div>
@@ -203,15 +222,9 @@ export function FeatureSettings({ fk, chat }: { fk: FeatureKey; chat: Chat }) {
             <SectionLabel>Текущий тариф</SectionLabel>
             <div>
               <div className="flex items-center justify-between">
-                <div className="text-[15px] font-bold">Анонимные сообщения</div>
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                  style={{ background: "oklch(0.72 0.16 155 / 0.15)", color: "oklch(0.85 0.15 155)" }}
-                >
-                  Активен
-                </span>
+                <div className="text-[16px] font-bold">Анонимные сообщения</div>
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5">
+              <div className="text-[13px] text-muted-foreground mt-1">
                 Бесплатно · 3 сообщения/день на участника
               </div>
             </div>
@@ -470,17 +483,13 @@ function SummaryPlanBlock({ chat }: { chat: Chat }) {
         <SectionLabel>Текущий тариф</SectionLabel>
         <div>
           <div className="flex items-center justify-between">
-            <div className="text-[15px] font-bold">{currentPlan.name}</div>
-            <span
-              className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-              style={{ background: "oklch(0.72 0.16 155 / 0.15)", color: "oklch(0.85 0.15 155)" }}
-            >
-              Активен
-            </span>
+            <div className="text-[16px] font-bold">{currentPlan.name}</div>
+            {chat.plan !== "Nano" && chat.planUntil && (
+              <span className="text-[11px] text-muted-foreground">до {chat.planUntil}</span>
+            )}
           </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
+          <div className="text-[13px] text-muted-foreground mt-1">
             {currentPlan.price === "Бесплатно" ? "Бесплатно" : currentPlan.price} · {currentPlan.limit}
-            {chat.planUntil && ` · до ${chat.planUntil}`}
           </div>
         </div>
 
@@ -576,19 +585,11 @@ function AntispamSettings({ chat }: { chat: Chat }) {
     <>
       <div className="glass-card rounded-[20px] p-4 space-y-3">
         <SectionLabel>Тариф</SectionLabel>
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-[15px] font-bold">{isPro ? "Antispam Pro" : "Antispam Free"}</div>
-            <div className="text-[11px] text-muted-foreground">
-              {isPro ? "$2.49/мес · все фичи" : "Бесплатно · базовая защита"}
-            </div>
+        <div>
+          <div className="text-[16px] font-bold">{isPro ? "Antispam Pro" : "Antispam Free"}</div>
+          <div className="text-[13px] text-muted-foreground mt-1">
+            {isPro ? "$2.49/мес · все навыки" : "Бесплатно · базовая защита"}
           </div>
-          <span
-            className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-            style={{ background: "oklch(0.72 0.16 155 / 0.15)", color: "oklch(0.85 0.15 155)" }}
-          >
-            Активен
-          </span>
         </div>
         <div className="flex gap-3 text-center">
           <div className="flex-1 bg-white/5 rounded-xl py-2.5">
@@ -703,7 +704,7 @@ function AntispamSettings({ chat }: { chat: Chat }) {
           )}
         </div>
 
-        <Setting label="Умный фильтр мата (LLM)">
+        <Setting label="Умный фильтр мата (AI)">
           <Toggle defaultOn={isPro} onChange={(v) => !isPro ? toast("Доступно в Pro") : toast(v ? "Включён" : "Отключён")} />
         </Setting>
         {isPro && (

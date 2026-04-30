@@ -155,7 +155,7 @@ export const tariffs = [
 ];
 
 export const voicePlans = [
-  { id: "free", name: "Free", price: "Бесплатно", minutes: "37.5 мин/мес", active: true },
+  { id: "free", name: "Free", price: "Бесплатно", minutes: "30 мин/мес", active: true },
   { id: "pro", name: "Pro", price: "$16.99/мес", minutes: "375 мин/мес", active: false },
   { id: "extra", name: "Extra", price: "$53.99/мес", minutes: "1500 мин/мес", active: false },
 ];

@@ -64,9 +64,9 @@ const FEATURE_DETAILS: Record<FeatureKey, { items: { icon: typeof CheckListIcon;
       { icon: Mic01Icon, title: "Голосовые в текст", subtitle: "Расшифровка появляется под сообщением автоматически" },
       { icon: Video01Icon, title: "Видео-кружочки", subtitle: "Транскрибация кружочков наравне с голосовыми" },
       { icon: BrainIcon, title: "Подавление галлюцинаций", subtitle: "Фильтр шума — убирает артефакты Whisper API" },
-      { icon: SecurityCheckIcon, title: "Модерация контента", subtitle: "LLM-проверка расшифровок перед публикацией" },
+      { icon: SecurityCheckIcon, title: "Модерация контента", subtitle: "AI-проверка расшифровок перед публикацией" },
     ],
-    trialText: "37.5 бесплатных минут в месяц",
+    trialText: "30 бесплатных минут в месяц",
   },
   podcast: {
     items: [
@@ -88,7 +88,7 @@ const FEATURE_DETAILS: Record<FeatureKey, { items: { icon: typeof CheckListIcon;
   },
   antispam: {
     items: [
-      { icon: BlockedIcon, title: "Умный фильтр мата", subtitle: "LLM-детект обходов, транслита и лит-спика" },
+      { icon: BlockedIcon, title: "Умный фильтр мата", subtitle: "AI-детект обходов, транслита и лит-спика" },
       { icon: BarChartIcon, title: "Слоу-мод по токсичности", subtitle: "Автоматическое ограничение при высокой токсичности" },
       { icon: FlashIcon, title: "Антифлуд", subtitle: "Блокировка при 5 одинаковых за 10 мин или 10 подряд за 30 сек" },
       { icon: HashtagIcon, title: "Кастомные стоп-слова", subtitle: "Свой список запрещённых фраз, до 20 бесплатно" },
@@ -136,7 +136,7 @@ const FEATURE_TARIFFS: Partial<Record<FeatureKey, { name: string; price: string;
     { name: "Contributor", price: "$99.9/мес", limit: "безлимит на все чаты + ранний доступ" },
   ],
   voice: [
-    { name: "Free", price: "Бесплатно", limit: "до 37.5 мин/мес на чат" },
+    { name: "Free", price: "Бесплатно", limit: "до 30 мин/мес на чат" },
     { name: "Pro", price: "$16.99/мес", limit: "до 375 мин/мес на чат" },
     { name: "Extra", price: "$53.99/мес", limit: "до 1500 мин/мес на чат" },
   ],
@@ -146,7 +146,7 @@ const FEATURE_TARIFFS: Partial<Record<FeatureKey, { name: string; price: string;
   ],
   antispam: [
     { name: "Free", price: "Бесплатно", limit: "базовая защита от спама и флуда" },
-    { name: "Pro", price: "$2.49/мес", limit: "LLM-фильтр, кастомная капча, отчёты" },
+    { name: "Pro", price: "$2.49/мес", limit: "AI-фильтр, кастомная капча, отчёты" },
   ],
 };
 
