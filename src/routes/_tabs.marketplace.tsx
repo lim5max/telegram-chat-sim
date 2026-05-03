@@ -77,6 +77,15 @@ const FEATURE_DETAILS: Record<FeatureKey, { items: { icon: typeof CheckListIcon;
     ],
     trialText: "Бесплатная неделя при активации",
   },
+  superPodcast: {
+    items: [
+      { icon: PodcastIcon, title: "Личный подкаст", subtitle: "Голосовая выжимка из всех ваших чатов в ЛС бота" },
+      { icon: VoiceIdIcon, title: "Выбор голоса", subtitle: "Onyx (мужской) или Shimmer (женский)" },
+      { icon: StopWatchIcon, title: "До 4 минут на выпуск", subtitle: "Компактный формат, удобно слушать на ходу" },
+      { icon: ArrowReloadHorizontalIcon, title: "Приходит автоматически", subtitle: "Каждое утро сразу после Super-Summary" },
+    ],
+    trialText: "16 бесплатных минут",
+  },
   kb: {
     items: [
       { icon: Search01Icon, title: "Поиск по истории", subtitle: "Парсинг до 10 000 последних сообщений при активации" },
@@ -115,6 +124,7 @@ const ACCENT_COLORS: Record<FeatureKey, string> = {
   summary: "oklch(0.65 0.15 230)",
   voice: "oklch(0.65 0.18 340)",
   podcast: "oklch(0.65 0.15 230)",
+  superPodcast: "oklch(0.65 0.18 340)",
   kb: "oklch(0.65 0.15 230)",
   antispam: "oklch(0.60 0.15 230)",
   anonymous: "oklch(0.65 0.18 340)",
@@ -144,6 +154,10 @@ const FEATURE_TARIFFS: Partial<Record<FeatureKey, { name: string; price: string;
     { name: "Free", price: "Бесплатно", limit: "пробная неделя" },
     { name: "Pro", price: "$5.99/мес", limit: "ежедневные выпуски, выбор голоса" },
   ],
+  superPodcast: [
+    { name: "Free", price: "Бесплатно", limit: "16 минут суммарно (~4 выпуска)" },
+    { name: "Pro", price: "$5.99/мес", limit: "ежедневные выпуски, выбор голоса" },
+  ],
   antispam: [
     { name: "Free", price: "Бесплатно", limit: "базовая защита от спама и флуда" },
     { name: "Pro", price: "$2.49/мес", limit: "AI-фильтр, кастомная капча, отчёты" },
@@ -156,7 +170,7 @@ const FILTERS = [
   { id: "admin", label: "Для админов", audience: "admin" as const },
 ];
 
-const FEATURES: FeatureKey[] = ["summary", "voice", "podcast", "kb", "antispam", "anonymous"];
+const FEATURES: FeatureKey[] = ["summary", "voice", "podcast", "superPodcast", "kb", "antispam", "anonymous"];
 
 const NEW_FEATURES: Set<FeatureKey> = new Set(["podcast", "kb"]);
 
@@ -310,7 +324,7 @@ function FeatureDetailView({
   const chats = useChatsStore((s) => s.chats);
 
   const audienceLabel =
-    f.audience === "admin" ? "Навык чата" : f.audience === "user" ? "Персональный навык" : "Навык чата";
+    f.audience === "admin" ? "Навык чата" : f.audience === "user" ? "Личный навык" : "Личный + навык чата";
 
   const handleCtaClick = () => {
     if (status === "active") {
@@ -495,8 +509,26 @@ function TariffComparison({ feature, tariffs }: { feature: FeatureKey; tariffs: 
 /* ------------------------------------------------------------------ */
 
 function AudienceTag({ audience }: { audience: "user" | "admin" | "both" }) {
+  if (audience === "both") {
+    return (
+      <>
+        <span
+          className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider shrink-0"
+          style={{ background: "oklch(0.65 0.18 340 / 0.15)", color: "oklch(0.78 0.14 340)" }}
+        >
+          личный
+        </span>
+        <span
+          className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider shrink-0"
+          style={{ background: "oklch(0.65 0.15 230 / 0.15)", color: "oklch(0.78 0.12 230)" }}
+        >
+          навык чата
+        </span>
+      </>
+    );
+  }
   const isPersonal = audience === "user";
-  const label = isPersonal ? "персональный" : "навык чата";
+  const label = isPersonal ? "личный" : "навык чата";
   return (
     <span
       className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider shrink-0"
@@ -602,5 +634,7 @@ function isActive(
       return c.antispam?.active ?? false;
     case "anonymous":
       return c.anonymous?.active ?? false;
+    case "superPodcast":
+      return false;
   }
 }

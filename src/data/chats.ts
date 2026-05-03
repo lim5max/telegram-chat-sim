@@ -167,7 +167,7 @@ export const superPodcast = {
   price: "$5.99/мес",
 };
 
-export type FeatureKey = "summary" | "voice" | "podcast" | "kb" | "antispam" | "anonymous";
+export type FeatureKey = "summary" | "voice" | "podcast" | "superPodcast" | "kb" | "antispam" | "anonymous";
 
 export type Monetization = "free" | "freemium" | "paid";
 
@@ -185,11 +185,11 @@ export const FEATURE_META: Record<
 > = {
   summary: {
     icon: "📝",
-    label: "Саммари",
+    label: "Chat Summary",
     short: "Саммари",
     desc: "Ежедневная выжимка обсуждений чата — приходит в 09:00.",
     price: "Бесплатно",
-    audience: "both",
+    audience: "admin",
     monetization: "free",
   },
   voice: {
@@ -198,17 +198,26 @@ export const FEATURE_META: Record<
     short: "Расшифровка",
     desc: "Автоматический перевод голосовых сообщений в текст.",
     price: "от $16.99/мес",
-    audience: "both",
+    audience: "admin",
     monetization: "freemium",
   },
   podcast: {
     icon: "🎙",
-    label: "Подкаст чата",
+    label: "Chat Podcast",
     short: "Подкаст",
     desc: "Аудио-версия саммари — слушайте обсуждения на ходу.",
     price: "$5.99/мес",
-    audience: "both",
+    audience: "admin",
     monetization: "paid",
+  },
+  superPodcast: {
+    icon: "🎧",
+    label: "Super Podcast",
+    short: "Super Podcast",
+    desc: "Ежедневный личный подкаст — голосовая выжимка из всех чатов.",
+    price: "$5.99/мес",
+    audience: "user",
+    monetization: "freemium",
   },
   kb: {
     icon: "📚",
@@ -234,7 +243,7 @@ export const FEATURE_META: Record<
     short: "Анонимные",
     desc: "Участники пишут через бота — автор скрыт от всех.",
     price: "Бесплатно",
-    audience: "user",
+    audience: "both",
     monetization: "free",
   },
 };

@@ -85,8 +85,8 @@ export const useChatsStore = create<State>((set) => ({
   adminAlerts: {},
   totalAnonSentToday: 0,
   superSummaryOn: true,
-  superPodcastOn: false,
-  superPodcastSubscription: null,
+  superPodcastOn: true,
+  superPodcastSubscription: { expiresAt: "04.06.2026" },
   superPodcastFreeMinutesUsed: 8,
   ignoreMeByChat: {},
 

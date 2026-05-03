@@ -155,6 +155,8 @@ function isActive(c: Chat, fk: FeatureKey): boolean {
       return c.antispam?.active ?? false;
     case "anonymous":
       return c.anonymous?.active ?? false;
+    case "superPodcast":
+      return false;
   }
 }
 

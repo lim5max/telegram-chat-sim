@@ -199,7 +199,6 @@ function FeatureCard({ fk }: { fk: keyof typeof FEATURE_META }) {
       <FeatureIconBadge feature={fk} size={32} iconSize={16} />
       <div className="text-sm font-semibold mt-1.5">{f.label}</div>
       <div className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{f.desc}</div>
-      <div className="mt-1.5 text-[10px] text-gradient font-semibold">{f.price}</div>
     </Link>
   );
 }

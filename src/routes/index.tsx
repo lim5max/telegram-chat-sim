@@ -62,8 +62,8 @@ const initialPrivate: Msg[] = [
     text:
       "👋 Привет! Я — ChatLogix.\n\nПомогаю управлять потоком информации и улучшаю взаимодействие между участниками чатов. Работаю как внутри добавленных чатов, так и лично для вас.\n\nС чего начнём?",
     buttons: [
-      { label: "📊 Посмотреть, как улучшить чат", action: "onboard-admin" },
-      { label: "✨ Изучить персональные возможности", action: "onboard-user" },
+      { label: "📊 Расскажи про навыки чата", action: "onboard-admin" },
+      { label: "✨ Покажи мне мои навыки", action: "onboard-user" },
     ],
   },
 ];
@@ -182,8 +182,8 @@ function PrivateChat() {
     pushBot({
       text: `Готово 👌 ChatLogix добавлен в «**${target.name}**»!\n\n🗓 Что обсуждалось вчера\nВсего было написано **${target.used} сообщений**\n\n${topicLines}\n\n${limitNote} Завтра тоже автоматически пришлю такое в чат.\n\nНастроить эмодзи, время и периодичность отправки можно в настройках.`,
       buttons: [
-        { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
-        { label: "🛡 Посмотреть антиспам", action: `onboard-admin-show-antispam:${chatId}` },
+        { label: "⚙️ Настроить саммари", action: "onboard-admin-settings" },
+        { label: "🛡 Расскажи про антиспам", action: `onboard-admin-show-antispam:${chatId}` },
       ],
     });
   };
@@ -200,8 +200,8 @@ function PrivateChat() {
         pushBot({
           text: "Давай покажу, как работает саммари чата. Вот пример — одно саммари за день в чате **«Здоровое питание»**:\n\n🗓 Что обсуждалось вчера 28.04.2026\nВсего было написано **112 сообщений**\n\n🥗 Интервальное голодание 16/8 — опыт участников (**31 сообщение**)\n🏋️ Питание до и после тренировки (**24 сообщения**)\n🧴 Разбор составов протеиновых батончиков (**18 сообщений**)\n📋 Меню на неделю — делимся рецептами (**15 сообщений**)\n\nИнтересные ссылки:\n[Калькулятор КБЖУ онлайн]\n[Подборка рецептов на неделю]\n\nТакое саммари приходит в чат **каждое утро**. Участникам не нужно листать сотни сообщений — всё ключевое в одном посте.\n\nХочешь так же в своём чате?",
           buttons: [
-            { label: "➕ Добавить бота в чат", action: "onboard-admin-addbot" },
-            { label: "🎤 Посмотреть расшифровку голосовых", action: "onboard-admin-preview-voice" },
+            { label: "➕ Добавить бота и включить", action: "onboard-admin-addbot" },
+            { label: "🎤 Расскажи про расшифровку голосовых", action: "onboard-admin-preview-voice" },
           ],
         });
         break;
@@ -210,8 +210,8 @@ function PrivateChat() {
         pushBot({
           text: "🎤 Расшифровка голосовых\n\nКогда кто-то отправляет голосовое или кружочек — бот автоматически добавляет текстовую версию под сообщением.\n\nУчастникам не нужно слушать — просто читают. Бесплатно **30 мин/мес** на чат.\n\nЧтобы включить — сначала добавьте бота в чат 👇",
           buttons: [
-            { label: "➕ Добавить бота в чат", action: "onboard-admin-addbot" },
-            { label: "🛡 Посмотреть антиспам", action: "onboard-admin-preview-antispam" },
+            { label: "➕ Добавить бота и включить", action: "onboard-admin-addbot" },
+            { label: "🛡 Расскажи про антиспам", action: "onboard-admin-preview-antispam" },
           ],
         });
         break;
@@ -220,7 +220,7 @@ function PrivateChat() {
         pushBot({
           text: "🛡 Антиспам\n\nБот автоматически удаляет спам, рекламу и флуд. Фильтрует мат с помощью AI — даже обходы через транслит и лит-спик.\n\nFree-тариф — базовая защита навсегда, Pro — умные фильтры и еженедельный отчёт.\n\nЧтобы включить — добавьте бота в чат 👇",
           buttons: [
-            { label: "➕ Добавить бота в чат", action: "onboard-admin-addbot" },
+            { label: "➕ Добавить бота и включить", action: "onboard-admin-addbot" },
           ],
         });
         break;
@@ -247,7 +247,7 @@ function PrivateChat() {
           pushBot({
             text: "ChatLogix пока нет ни в одном из ваших чатов.\n\nЧтобы получать Super-Summary, бот должен быть добавлен хотя бы в один чат. Попросите админа добавить @ChatLogixBot с правами администратора — или добавьте сами, если вы админ.",
             buttons: [
-              { label: "➕ Добавить бота в чат", action: "onboard-admin-addbot" },
+              { label: "➕ Добавить бота и включить", action: "onboard-admin-addbot" },
             ],
           });
           break;
@@ -257,6 +257,7 @@ function PrivateChat() {
           text: `Покажу, как не читать все чаты и быть в курсе.\n\nSuper-Summary — одна сводка по всем твоим чатам, каждое утро в личку:\n\n🚀 **Твоя сводка за сегодня:**\n\n🏢 **Рабочий чат**\n— Дедлайн по проекту перенесли на пятницу (47 сообщ.)\n— Новый дизайн главной одобрили (23 сообщ.)\n🔗 [Figma-макет], [Таск в Jira]\n\n🏠 **ЖК Новый Город**\n— Отключение воды 30.04 с 10:00 до 18:00 (31 сообщ.)\n— Собрание жильцов в субботу (12 сообщ.)\n🔗 [Объявление УК]\n\n💪 **Здоровое питание**\n— Интервальное голодание 16/8 — опыт участников (28 сообщ.)\n— Подборка рецептов на неделю (15 сообщ.)\n🔗 [Калькулятор КБЖУ]\n\nВместо десятков чатов — одно сообщение с главным. Хочешь получать такой каждый день?`,
           buttons: [
             { label: "✨ Включить Super-Summary", action: "onboard-user-enable" },
+            { label: "🎧 Расскажи про Super Podcast", action: "onboard-user-show-podcast" },
           ],
         });
         break;
@@ -267,8 +268,8 @@ function PrivateChat() {
         pushBot({
           text: "Готово 👌 Super-Summary будет приходить каждый день в 09:00.\n\nЧаты, где вчера было тихо, в отчёт не попадают — только то, где что-то обсуждали.\n\nКстати, эту сводку можно ещё и слушать — Super Podcast озвучивает её каждое утро.",
           buttons: [
-            { label: "⚙️ Открыть настройки", action: "open-app" },
-            { label: "🎧 Посмотреть Super Podcast", action: "onboard-user-show-podcast" },
+            { label: "⚙️ Настроить Super-Summary", action: "open-app" },
+            { label: "🎧 Расскажи про Super Podcast", action: "onboard-user-show-podcast" },
           ],
         });
         break;
@@ -278,7 +279,7 @@ function PrivateChat() {
           text: "🎧 Super Podcast\n\nЭто расширенная аудио-версия Super-Summary. Можно слушать за рулём, на прогулке или по дороге на работу — не нужно читать. Приходит одним голосовым сообщением каждое утро.",
           buttons: [
             { label: "🎧 Включить Super Podcast", action: "onboard-user-podcast" },
-            { label: "🕵️ Посмотреть анонимные сообщения", action: "onboard-user-show-anon" },
+            { label: "🕵️ Расскажи про анонимные сообщения", action: "onboard-user-show-anon" },
           ],
         });
         break;
@@ -288,8 +289,8 @@ function PrivateChat() {
         pushBot({
           text: "🎧 Super Podcast включён!\n\nПервый выпуск придёт завтра вместе с Super-Summary. Выбрать голос и управлять подпиской можно в настройках.",
           buttons: [
-            { label: "⚙️ Открыть настройки", action: "open-app" },
-            { label: "🕵️ Посмотреть анонимные сообщения", action: "onboard-user-show-anon" },
+            { label: "⚙️ Настроить Super Podcast", action: "open-app" },
+            { label: "🕵️ Расскажи про анонимные сообщения", action: "onboard-user-show-anon" },
           ],
         });
         break;
@@ -301,10 +302,10 @@ function PrivateChat() {
           buttons: anonAvailable.length > 0
             ? [
                 { label: "🎭 Написать анонимно", action: "anon-start" },
-                { label: "⚙️ Открыть настройки", action: "open-app" },
+                { label: "⚙️ Настроить анонимные сообщения", action: "open-app" },
               ]
             : [
-                { label: "⚙️ Открыть настройки", action: "open-app" },
+                { label: "⚙️ Настроить анонимные сообщения", action: "open-app" },
               ],
         });
         break;
@@ -547,7 +548,7 @@ function PrivateChat() {
             text: `🛡 Антиспам\n\nВ чатах часто бывает флуд, спам, наплыв ботов и токсичность. Антиспам помогает избавить чат от всего этого мусора.\n\nПри включении сразу доступно: удаление спама и рекламы, антифлуд, запрет ссылок от новичков и капча при входе.\n\nЕсть Pro-режим с расширенным функционалом: AI-фильтр мата, умный слоу-мод, кастомная капча, приветствие новичков и еженедельный отчёт.`,
             buttons: [
               { label: "🛡 Включить антиспам", action: `onboard-admin-antispam:${cid}` },
-              { label: "🎤 Посмотреть расшифровку", action: `onboard-admin-show-voice:${cid}` },
+              { label: "🎤 Расскажи про расшифровку", action: `onboard-admin-show-voice:${cid}` },
             ],
           });
           break;
@@ -558,7 +559,7 @@ function PrivateChat() {
             text: `🎤 Расшифровка голосовых\n\nКогда кто-то отправляет голосовое или кружочек — бот добавляет текстовую версию прямо под сообщением. Участникам не нужно слушать — просто читают.\n\nА ещё расшифровки попадают в саммари, делая сводку полнее и полезнее.`,
             buttons: [
               { label: "🎤 Включить расшифровку", action: `onboard-admin-voice:${cid}` },
-              { label: "🎙 Посмотреть подкаст чата", action: `onboard-admin-show-podcast:${cid}` },
+              { label: "🎙 Расскажи про подкаст чата", action: `onboard-admin-show-podcast:${cid}` },
             ],
           });
           break;
@@ -569,7 +570,7 @@ function PrivateChat() {
             text: `🎙 Подкаст чата\n\nТеперь можно слушать что обсуждалось вчера — за рулём, на прогулке или по дороге на работу. Выпуск приходит в чат каждое утро сразу после текстового саммари.`,
             buttons: [
               { label: "🎙 Включить подкаст", action: `onboard-admin-podcast:${cid}` },
-              { label: "📚 Посмотреть базу знаний", action: `onboard-admin-show-kb:${cid}` },
+              { label: "📚 Расскажи про базу знаний", action: `onboard-admin-show-kb:${cid}` },
             ],
           });
           break;
@@ -580,7 +581,7 @@ function PrivateChat() {
             text: `📚 База знаний\n\nЗнаете это чувство, когда точно помнишь что обсуждали, но найти не можешь? База знаний это решает.\n\nУчастники пишут /search прямо в чате — бот ищет по истории и отвечает с ссылками на нужные сообщения.`,
             buttons: [
               { label: "📚 Включить базу знаний", action: `onboard-admin-kb:${cid}` },
-              { label: "🎭 Посмотреть анонимные сообщения", action: `onboard-admin-show-anon:${cid}` },
+              { label: "🎭 Расскажи про анонимные сообщения", action: `onboard-admin-show-anon:${cid}` },
             ],
           });
           break;
@@ -591,7 +592,7 @@ function PrivateChat() {
             text: `🎭 Анонимные сообщения\n\nУчастники пишут через бота — автор скрыт от всех. Полезно для честной обратной связи. Лимит — 3 в день на чат.`,
             buttons: [
               { label: "🎭 Включить анонимные сообщения", action: `onboard-admin-anon:${cid}` },
-              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
+              { label: "⚙️ Настроить анонимные сообщения", action: "onboard-admin-settings" },
             ],
           });
           break;
@@ -605,8 +606,8 @@ function PrivateChat() {
           pushBot({
             text: `🛡 Антиспам включён в «${target?.name}»!\n\nСейчас работает: удаление спама и рекламы, антифлуд, запрет ссылок от новичков, капча при входе.\n\nДобавить свои стоп-слова, настроить фильтры медиа или перейти на Pro-тариф можно в настройках.`,
             buttons: [
-              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
-              { label: "🎤 Посмотреть расшифровку", action: `onboard-admin-show-voice:${cid}` },
+              { label: "⚙️ Настроить антиспам", action: "onboard-admin-settings" },
+              { label: "🎤 Расскажи про расшифровку", action: `onboard-admin-show-voice:${cid}` },
             ],
           });
           break;
@@ -618,8 +619,8 @@ function PrivateChat() {
           pushBot({
             text: `🎤 Расшифровка включена в «${target?.name}»!\n\nВам доступно 30 минут в месяц на бесплатном тарифе. Расширить количество минут и выбрать голос озвучки можно в настройках.`,
             buttons: [
-              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
-              { label: "🎙 Посмотреть подкаст чата", action: `onboard-admin-show-podcast:${cid}` },
+              { label: "⚙️ Настроить расшифровку", action: "onboard-admin-settings" },
+              { label: "🎙 Расскажи про подкаст чата", action: `onboard-admin-show-podcast:${cid}` },
             ],
           });
           break;
@@ -631,8 +632,8 @@ function PrivateChat() {
           pushBot({
             text: `🎙 Подкаст включён в «${target?.name}»!\n\nТеперь каждое утро вместе с саммари будет приходить аудио-выпуск — можно слушать по дороге на работу. По умолчанию озвучка приходит с мужским голосом длительностью до 4 минут. Первая неделя бесплатно.\n\nСменить голос или оформить подписку можно в настройках.`,
             buttons: [
-              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
-              { label: "📚 Посмотреть базу знаний", action: `onboard-admin-show-kb:${cid}` },
+              { label: "⚙️ Настроить подкаст", action: "onboard-admin-settings" },
+              { label: "📚 Расскажи про базу знаний", action: `onboard-admin-show-kb:${cid}` },
             ],
           });
           break;
@@ -643,8 +644,8 @@ function PrivateChat() {
           pushBot({
             text: `📚 База знаний активирована в «${target?.name}»!\n\nСейчас начнётся индексация последних 10 000 сообщений — это займёт несколько минут. Когда всё будет готово, пришлём уведомление в чат.\n\nПосле этого участники смогут искать через /search, а новые сообщения будут автоматически попадать в базу.`,
             buttons: [
-              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
-              { label: "🎭 Посмотреть анонимные сообщения", action: `onboard-admin-show-anon:${cid}` },
+              { label: "⚙️ Настроить базу знаний", action: "onboard-admin-settings" },
+              { label: "🎭 Расскажи про анонимные сообщения", action: `onboard-admin-show-anon:${cid}` },
             ],
           });
           break;
@@ -656,7 +657,7 @@ function PrivateChat() {
           pushBot({
             text: `🎭 Анонимные сообщения включены в «${target?.name}»!\n\nТеперь участники могут писать через бота так, чтобы никто не узнал автора. Удобно для честной обратной связи. Каждый может отправить до 3 сообщений в день.\n\nРазрешить или запретить отправку медиа можно в настройках.`,
             buttons: [
-              { label: "⚙️ Открыть настройки", action: "onboard-admin-settings" },
+              { label: "⚙️ Настроить анонимные сообщения", action: "onboard-admin-settings" },
             ],
           });
           break;
@@ -754,7 +755,7 @@ function PrivateChat() {
         <div className="max-w-[640px] mx-auto px-2.5 py-2 grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1.5">
             <ChatMenuBtn
-              label="✨ Персональные навыки"
+              label="✨ Logix для тебя"
               onClick={() => handleAction("user-settings")}
             />
             <ChatMenuBtn
@@ -768,7 +769,7 @@ function PrivateChat() {
               onClick={() => handleAction("addbot")}
             />
             <ChatMenuBtn
-              label="🛠 Настройки в чатах"
+              label="🛠 Logix для твоего чата"
               onClick={() => navigate({ to: "/chats" })}
             />
           </div>
