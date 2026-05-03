@@ -109,7 +109,7 @@ const FEATURE_DETAILS: Record<FeatureKey, { items: { icon: typeof CheckListIcon;
   anonymous: {
     items: [
       { icon: IncognitoIcon, title: "Анонимная отправка", subtitle: "Бот публикует сообщение от своего имени, автор скрыт" },
-      { icon: LimitationIcon, title: "Лимит 3 в день", subtitle: "На каждый чат — защита от злоупотреблений" },
+      { icon: LimitationIcon, title: "Лимит 3 в день на человека", subtitle: "Защита от злоупотреблений" },
       { icon: SecurityCheckIcon, title: "Модерация", subtitle: "Контент проверяется перед публикацией" },
       { icon: Camera01Icon, title: "Медиа по решению админа", subtitle: "Админ решает, можно ли отправлять фото и видео" },
     ],

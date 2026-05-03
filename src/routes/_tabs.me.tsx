@@ -235,7 +235,7 @@ function ForMeScreen() {
         {expanded === "anonymous" && (
           <div className="px-4 pb-4 pt-1 space-y-3 border-t border-white/5">
             <div className="text-[13px] text-muted-foreground">
-              Отправьте сообщение через бота — автор скрыт от всех. Лимит: 3 в день на чат.
+              Отправьте сообщение через бота — автор скрыт от всех. Лимит: 3 в день на человека.
             </div>
             {anonChats.length > 0 && (
               <>
