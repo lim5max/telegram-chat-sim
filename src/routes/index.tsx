@@ -785,22 +785,22 @@ function PrivateChat() {
         <div className="max-w-[640px] mx-auto px-2.5 py-2 grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1.5">
             <ChatMenuBtn
+              label="🛠 Logix для твоего чата"
+              onClick={() => navigate({ to: "/chats" })}
+            />
+            <ChatMenuBtn
+              label="➕ Добавить бота в чат"
+              onClick={() => handleAction("addbot")}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <ChatMenuBtn
               label="✨ Logix для тебя"
               onClick={() => handleAction("user-settings")}
             />
             <ChatMenuBtn
               label="❔ Помощь"
               onClick={() => handleAction("help")}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <ChatMenuBtn
-              label="➕ Добавить бота в чат"
-              onClick={() => handleAction("addbot")}
-            />
-            <ChatMenuBtn
-              label="🛠 Logix для твоего чата"
-              onClick={() => navigate({ to: "/chats" })}
             />
           </div>
         </div>
