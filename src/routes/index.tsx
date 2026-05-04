@@ -180,12 +180,18 @@ function PrivateChat() {
       : `Саммари обрабатывает бесплатно до **${freeLimit} сообщений/день**.`;
 
     pushBot({
-      text: `Готово 👌 ChatLogix добавлен в «**${target.name}**»!\n\n🗓 Что обсуждалось вчера\nВсего было написано **${target.used} сообщений**\n\n${topicLines}\n\n${limitNote} Завтра тоже автоматически пришлю такое в чат.\n\nНастроить эмодзи, время и периодичность отправки можно в настройках.`,
-      buttons: [
-        { label: "⚙️ Настроить саммари", action: "onboard-admin-settings" },
-        { label: "🛡 Расскажи про антиспам", action: `onboard-admin-show-antispam:${chatId}` },
-      ],
+      text: `⚠️ Я не вижу историю сообщений в «**${target.name}**»\n\nДля корректной работы бота зайдите в настройки чата → «История сообщений» → включите хотя бы один раз. После этого можете выключить обратно, если хотите.`,
     });
+
+    setTimeout(() => {
+      pushBot({
+        text: `Готово 👌 ChatLogix добавлен в «**${target.name}**»!\n\n🗓 Что обсуждалось вчера\nВсего было написано **${target.used} сообщений**\n\n${topicLines}\n\n${limitNote} Завтра тоже автоматически пришлю такое в чат.\n\nНастроить эмодзи, время и периодичность отправки можно в настройках.`,
+        buttons: [
+          { label: "⚙️ Настроить саммари", action: "onboard-admin-settings" },
+          { label: "🛡 Расскажи про антиспам", action: `onboard-admin-show-antispam:${chatId}` },
+        ],
+      });
+    }, 800);
   };
 
   const handleAction = (action: string, label?: string) => {

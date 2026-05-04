@@ -12,6 +12,7 @@ import {
   Message01Icon,
   AddCircleIcon,
   Megaphone01Icon,
+  Settings01Icon,
 } from "@hugeicons/core-free-icons";
 
 export const Route = createFileRoute("/_tabs/home")({
@@ -37,7 +38,7 @@ function HomeScreen() {
 
   return (
     <div className="px-4 pt-5 space-y-5 max-w-[520px] mx-auto">
-      {/* Header: avatar + name */}
+      {/* Header: avatar + name + profile button */}
       <div className="flex items-center gap-3">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
@@ -53,6 +54,12 @@ function HomeScreen() {
           <div className="px-2.5 py-1.5 rounded-xl bg-white/10 text-[11px] font-medium text-foreground/80">
             админ: <span className="text-white font-semibold">{adminChats.length}</span>
           </div>
+          <Link
+            to="/profile"
+            className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/15 transition active:scale-95"
+          >
+            <HugeiconsIcon icon={Settings01Icon} size={17} strokeWidth={2} className="text-foreground/80" />
+          </Link>
         </div>
       </div>
 

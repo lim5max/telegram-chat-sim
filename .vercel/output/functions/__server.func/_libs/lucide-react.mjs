@@ -207,12 +207,12 @@ export {
   TrendingUp as T,
   Users as U,
   X,
-  ChevronLeft as a,
-  Paperclip as b,
-  Smile as c,
-  Send as d,
-  ChevronDown as e,
-  ChevronRight as f,
+  ChevronDown as a,
+  ChevronRight as b,
+  ChevronLeft as c,
+  Paperclip as d,
+  Smile as e,
+  Send as f,
   Play as g,
   TriangleAlert as h
 };

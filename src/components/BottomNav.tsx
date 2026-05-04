@@ -5,21 +5,19 @@ import {
   MessageMultiple01Icon,
   GridIcon,
   SparklesIcon,
-  UserIcon,
 } from "@hugeicons/core-free-icons";
 
-const tabs: { to: "/home" | "/chats" | "/marketplace" | "/me" | "/profile"; label: string; icon: typeof Home01Icon }[] = [
+const tabs: { to: "/home" | "/chats" | "/marketplace" | "/me"; label: string; icon: typeof Home01Icon }[] = [
   { to: "/home", label: "Главная", icon: Home01Icon },
   { to: "/chats", label: "Чаты", icon: MessageMultiple01Icon },
   { to: "/marketplace", label: "Все навыки", icon: GridIcon },
   { to: "/me", label: "Твои навыки", icon: SparklesIcon },
-  { to: "/profile", label: "Профиль", icon: UserIcon },
 ];
 
 export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 backdrop-blur-xl bg-background/85 border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
-      <div className="max-w-[520px] mx-auto grid grid-cols-5">
+      <div className="max-w-[520px] mx-auto grid grid-cols-4">
         {tabs.map((t) => (
           <Link
             key={t.to}

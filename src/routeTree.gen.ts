@@ -10,11 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as TabsRouteImport } from './routes/_tabs'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatChatIdRouteImport } from './routes/chat.$chatId'
-import { Route as TabsProfileRouteImport } from './routes/_tabs.profile'
 import { Route as TabsMeRouteImport } from './routes/_tabs.me'
 import { Route as TabsMarketplaceRouteImport } from './routes/_tabs.marketplace'
 import { Route as TabsHomeRouteImport } from './routes/_tabs.home'
@@ -24,6 +24,11 @@ import { Route as ChatChatIdFeatureFeatureKeyRouteImport } from './routes/chat.$
 const SubscriptionsRoute = SubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -44,11 +49,6 @@ const ChatChatIdRoute = ChatChatIdRouteImport.update({
   id: '/chat/$chatId',
   path: '/chat/$chatId',
   getParentRoute: () => rootRouteImport,
-} as any)
-const TabsProfileRoute = TabsProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => TabsRoute,
 } as any)
 const TabsMeRoute = TabsMeRouteImport.update({
   id: '/me',
@@ -80,24 +80,24 @@ const ChatChatIdFeatureFeatureKeyRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/profile': typeof ProfileRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/chats': typeof TabsChatsRoute
   '/home': typeof TabsHomeRoute
   '/marketplace': typeof TabsMarketplaceRoute
   '/me': typeof TabsMeRoute
-  '/profile': typeof TabsProfileRoute
   '/chat/$chatId': typeof ChatChatIdRouteWithChildren
   '/chat/$chatId/feature/$featureKey': typeof ChatChatIdFeatureFeatureKeyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/profile': typeof ProfileRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/chats': typeof TabsChatsRoute
   '/home': typeof TabsHomeRoute
   '/marketplace': typeof TabsMarketplaceRoute
   '/me': typeof TabsMeRoute
-  '/profile': typeof TabsProfileRoute
   '/chat/$chatId': typeof ChatChatIdRouteWithChildren
   '/chat/$chatId/feature/$featureKey': typeof ChatChatIdFeatureFeatureKeyRoute
 }
@@ -106,12 +106,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_tabs': typeof TabsRouteWithChildren
   '/app': typeof AppRoute
+  '/profile': typeof ProfileRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/_tabs/chats': typeof TabsChatsRoute
   '/_tabs/home': typeof TabsHomeRoute
   '/_tabs/marketplace': typeof TabsMarketplaceRoute
   '/_tabs/me': typeof TabsMeRoute
-  '/_tabs/profile': typeof TabsProfileRoute
   '/chat/$chatId': typeof ChatChatIdRouteWithChildren
   '/chat/$chatId/feature/$featureKey': typeof ChatChatIdFeatureFeatureKeyRoute
 }
@@ -120,24 +120,24 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/profile'
     | '/subscriptions'
     | '/chats'
     | '/home'
     | '/marketplace'
     | '/me'
-    | '/profile'
     | '/chat/$chatId'
     | '/chat/$chatId/feature/$featureKey'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/app'
+    | '/profile'
     | '/subscriptions'
     | '/chats'
     | '/home'
     | '/marketplace'
     | '/me'
-    | '/profile'
     | '/chat/$chatId'
     | '/chat/$chatId/feature/$featureKey'
   id:
@@ -145,12 +145,12 @@ export interface FileRouteTypes {
     | '/'
     | '/_tabs'
     | '/app'
+    | '/profile'
     | '/subscriptions'
     | '/_tabs/chats'
     | '/_tabs/home'
     | '/_tabs/marketplace'
     | '/_tabs/me'
-    | '/_tabs/profile'
     | '/chat/$chatId'
     | '/chat/$chatId/feature/$featureKey'
   fileRoutesById: FileRoutesById
@@ -159,6 +159,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TabsRoute: typeof TabsRouteWithChildren
   AppRoute: typeof AppRoute
+  ProfileRoute: typeof ProfileRoute
   SubscriptionsRoute: typeof SubscriptionsRoute
   ChatChatIdRoute: typeof ChatChatIdRouteWithChildren
 }
@@ -170,6 +171,13 @@ declare module '@tanstack/react-router' {
       path: '/subscriptions'
       fullPath: '/subscriptions'
       preLoaderRoute: typeof SubscriptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -199,13 +207,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/chat/$chatId'
       preLoaderRoute: typeof ChatChatIdRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_tabs/profile': {
-      id: '/_tabs/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof TabsProfileRouteImport
-      parentRoute: typeof TabsRoute
     }
     '/_tabs/me': {
       id: '/_tabs/me'
@@ -250,7 +251,6 @@ interface TabsRouteChildren {
   TabsHomeRoute: typeof TabsHomeRoute
   TabsMarketplaceRoute: typeof TabsMarketplaceRoute
   TabsMeRoute: typeof TabsMeRoute
-  TabsProfileRoute: typeof TabsProfileRoute
 }
 
 const TabsRouteChildren: TabsRouteChildren = {
@@ -258,7 +258,6 @@ const TabsRouteChildren: TabsRouteChildren = {
   TabsHomeRoute: TabsHomeRoute,
   TabsMarketplaceRoute: TabsMarketplaceRoute,
   TabsMeRoute: TabsMeRoute,
-  TabsProfileRoute: TabsProfileRoute,
 }
 
 const TabsRouteWithChildren = TabsRoute._addFileChildren(TabsRouteChildren)
@@ -279,6 +278,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TabsRoute: TabsRouteWithChildren,
   AppRoute: AppRoute,
+  ProfileRoute: ProfileRoute,
   SubscriptionsRoute: SubscriptionsRoute,
   ChatChatIdRoute: ChatChatIdRouteWithChildren,
 }
