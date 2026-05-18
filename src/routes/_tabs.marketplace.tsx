@@ -120,7 +120,6 @@ const FEATURE_DETAILS: Record<FeatureKey, { items: { icon: typeof CheckListIcon;
   askBot: {
     items: [
       { icon: AtIcon, title: "Упоминание @ChatLogixBot", subtitle: "Работает в любом чате — даже если бот не добавлен" },
-      { icon: BubbleChatIcon, title: "Выбор источника", subtitle: "Inline-кнопки: искать в сети или в базе знаний чата" },
       { icon: GlobalSearchIcon, title: "Поиск по интернету", subtitle: "Свежие статьи и данные через Brave Search" },
       { icon: MessageQuestionIcon, title: "Универсальный эксперт", subtitle: "Технические вопросы, разбор сообщений через reply" },
     ],
