@@ -28,7 +28,7 @@ function ChatLayout() {
   return <ChatDetails />;
 }
 
-const ALL: FeatureKey[] = ["summary", "voice", "podcast", "kb", "antispam", "anonymous"];
+const ALL: FeatureKey[] = ["summary", "voice", "podcast", "kb", "askBot", "antispam", "anonymous"];
 
 function ChatDetails() {
   const { chatId } = Route.useParams();
@@ -246,6 +246,8 @@ function isActive(c: Chat, fk: FeatureKey): boolean {
       return c.antispam?.active ?? false;
     case "anonymous":
       return c.anonymous?.active ?? false;
+    case "askBot":
+      return c.askBot?.active ?? false;
   }
 }
 
@@ -265,6 +267,8 @@ function featureStatus(c: Chat, fk: FeatureKey): string {
       return c.antispam?.active ? `Удалено за 24 ч: ${c.antispam.deleted24h}` : "Отключено";
     case "anonymous":
       return c.anonymous?.active ? `Доступно · 3 в день` : "Отключено";
+    case "askBot":
+      return c.askBot?.active ? "Активен · 1/мин, 15/ч, 50/день на юзера" : "Отключено";
   }
 }
 

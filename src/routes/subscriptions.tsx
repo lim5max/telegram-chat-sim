@@ -17,7 +17,7 @@ export const Route = createFileRoute("/subscriptions")({
   component: SubscriptionsScreen,
 });
 
-const ALL: FeatureKey[] = ["summary", "voice", "podcast", "kb", "antispam", "anonymous"];
+const ALL: FeatureKey[] = ["summary", "voice", "podcast", "kb", "askBot", "antispam", "anonymous"];
 
 function SubscriptionsScreen() {
   const chats = useChatsStore((s) => s.chats);
@@ -155,6 +155,8 @@ function isActive(c: Chat, fk: FeatureKey): boolean {
       return c.antispam?.active ?? false;
     case "anonymous":
       return c.anonymous?.active ?? false;
+    case "askBot":
+      return c.askBot?.active ?? false;
     case "superPodcast":
       return false;
   }

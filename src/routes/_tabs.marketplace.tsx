@@ -32,6 +32,9 @@ import {
   LimitationIcon,
   Camera01Icon,
   ArrowRight01Icon,
+  AtIcon,
+  GlobalSearchIcon,
+  MessageQuestionIcon,
 } from "@hugeicons/core-free-icons";
 
 export const Route = createFileRoute("/_tabs/marketplace")({
@@ -89,7 +92,7 @@ const FEATURE_DETAILS: Record<FeatureKey, { items: { icon: typeof CheckListIcon;
   kb: {
     items: [
       { icon: Search01Icon, title: "Поиск по истории", subtitle: "Парсинг до 10 000 последних сообщений при активации" },
-      { icon: BubbleChatIcon, title: "Команда /search", subtitle: "Участники спрашивают прямо в чате, бот отвечает публично" },
+      { icon: BubbleChatIcon, title: "Команда /faq", subtitle: "Участники спрашивают прямо в чате, бот отвечает публично" },
       { icon: BarChartIcon, title: "Умное ранжирование", subtitle: "Приоритет у свежих и обсуждаемых тредов" },
       { icon: ArrowReloadHorizontalIcon, title: "Автопополнение", subtitle: "Новые сообщения индексируются автоматически" },
     ],
@@ -114,6 +117,15 @@ const FEATURE_DETAILS: Record<FeatureKey, { items: { icon: typeof CheckListIcon;
       { icon: Camera01Icon, title: "Медиа по решению админа", subtitle: "Админ решает, можно ли отправлять фото и видео" },
     ],
   },
+  askBot: {
+    items: [
+      { icon: AtIcon, title: "Упоминание @ChatLogixBot", subtitle: "Работает в любом чате — даже если бот не добавлен" },
+      { icon: BubbleChatIcon, title: "Выбор источника", subtitle: "Inline-кнопки: искать в сети или в базе знаний чата" },
+      { icon: GlobalSearchIcon, title: "Поиск по интернету", subtitle: "Свежие статьи и данные через Brave Search" },
+      { icon: MessageQuestionIcon, title: "Универсальный эксперт", subtitle: "Технические вопросы, разбор сообщений через reply" },
+    ],
+    trialText: "Бесплатно · 1/мин, 15/ч, 50/день на пользователя",
+  },
 };
 
 /* ------------------------------------------------------------------ */
@@ -128,6 +140,7 @@ const ACCENT_COLORS: Record<FeatureKey, string> = {
   kb: "oklch(0.65 0.15 230)",
   antispam: "oklch(0.60 0.15 230)",
   anonymous: "oklch(0.65 0.18 340)",
+  askBot: "oklch(0.65 0.15 230)",
 };
 
 /* ------------------------------------------------------------------ */
@@ -170,9 +183,9 @@ const FILTERS = [
   { id: "admin", label: "Для админов", audience: "admin" as const },
 ];
 
-const FEATURES: FeatureKey[] = ["summary", "voice", "podcast", "superPodcast", "kb", "antispam", "anonymous"];
+const FEATURES: FeatureKey[] = ["summary", "askBot", "voice", "podcast", "superPodcast", "kb", "antispam", "anonymous"];
 
-const NEW_FEATURES: Set<FeatureKey> = new Set(["podcast", "kb"]);
+const NEW_FEATURES: Set<FeatureKey> = new Set(["podcast", "kb", "askBot"]);
 
 type Status = "free" | "freemium" | "paid" | "active" | "trial";
 
@@ -618,6 +631,7 @@ function isActive(
     knowledgeBase?: { active: boolean };
     antispam?: { active: boolean };
     anonymous?: { active: boolean };
+    askBot?: { active: boolean };
   },
   fk: FeatureKey,
 ): boolean {
@@ -634,6 +648,8 @@ function isActive(
       return c.antispam?.active ?? false;
     case "anonymous":
       return c.anonymous?.active ?? false;
+    case "askBot":
+      return c.askBot?.active ?? false;
     case "superPodcast":
       return false;
   }

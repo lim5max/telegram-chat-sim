@@ -69,7 +69,8 @@ const initialPrivate: Msg[] = [
 ];
 
 function TelegramScreen() {
-  const [mode, setMode] = useState<"private" | "group">("private");
+  const mode = useChatsStore((s) => s.tabMode);
+  const setMode = useChatsStore((s) => s.setTabMode);
   return (
     <div className="min-h-screen flex flex-col">
       <div className="sticky top-0 z-20 backdrop-blur-xl bg-background/70 border-b border-white/8">
@@ -121,6 +122,7 @@ function PrivateChat() {
   const [typing, setTyping] = useState(false);
   const [input, setInput] = useState("");
   const [anonStep, setAnonStep] = useState<"idle" | "pick" | "compose" | "confirm">("idle");
+  const [skillStep, setSkillStep] = useState<"idle" | "compose">("idle");
   const [anonChatId, setAnonChatId] = useState<string | null>(null);
   const [pendingText, setPendingText] = useState("");
   const [ignoringMe, setIgnoringMe] = useState(false);
@@ -129,6 +131,9 @@ function PrivateChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const toggleFeature = useChatsStore((s) => s.toggleFeature);
+  const pushGroupMessage = useChatsStore((s) => s.pushMessage);
+  const setActiveChat = useChatsStore((s) => s.setActiveChat);
+  const setTabMode = useChatsStore((s) => s.setTabMode);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -178,6 +183,18 @@ function PrivateChat() {
     const limitNote = target.used > freeLimit
       ? `Обработано **${processed} из ${target.used}** сообщений (бесплатный лимит — ${freeLimit}/день). Увеличить можно в настройках.`
       : `Саммари обрабатывает бесплатно до **${freeLimit} сообщений/день**.`;
+
+    pushGroupMessage(target.id, {
+      from: "bot",
+      text: `В любом активном чате одна и та же история: однотипные вопросы, флуд, тяжело читать все сообщения если пропустил пару дней в чате, потухающая активность через время.\n\nМеня зовут **ChatLogix**, я AI-ассистент этого чата. У меня есть навыки для чата чтобы:\n\n🎯 Держать участников чата в курсе происходящего сводками и подкастом\n🔎 Отвечать на вопросы исходя из истории чата\n🛡 Чистить чат от флуда, спама и наплыва ботов\n🎙️ Расшифровывать голосовые сообщения\n🎉 Поддерживать активность чата за счёт развлекательных навыков\n\nЕсли нужного навыка нет — расскажите свою идею в ЛС, мы посмотрим и попробуем сделать.\n\nА ещё у меня есть персональные навыки, которые работают в ЛС бота. И помогают настроить поток информации под себя.\n\n[✨ Узнать про личную пользу в боте](open-bot-personal)`,
+    });
+
+    pushBot({
+      text: `📨 Я отправил приветствие в «**${target.name}**» — посмотреть можно во вкладке «🔥 Группа» сверху.`,
+      buttons: [
+        { label: "👀 Открыть чат и посмотреть", action: `view-group-welcome:${target.id}` },
+      ],
+    });
 
     pushBot({
       text: `⚠️ Я не вижу историю сообщений в «**${target.name}**»\n\nДля корректной работы бота зайдите в настройки чата → «История сообщений» → включите хотя бы один раз. После этого можете выключить обратно, если хотите.`,
@@ -244,7 +261,17 @@ function PrivateChat() {
 
       case "onboard-admin-preview-kb":
         pushBot({
-          text: "📚 База знаний\n\nЗнаете это чувство, когда точно помнишь что обсуждали, но найти не можешь? База знаний это решает.\n\nУчастники пишут /search прямо в чате — бот ищет по истории и отвечает с ссылками на нужные сообщения.\n\nЧтобы включить — добавьте бота в чат 👇",
+          text: "📚 База знаний\n\nЗнаете это чувство, когда точно помнишь что обсуждали, но найти не можешь? База знаний это решает.\n\nУчастники пишут /faq прямо в чате — бот ищет по истории и отвечает с ссылками на нужные сообщения.\n\nЧтобы включить — добавьте бота в чат 👇",
+          buttons: [
+            { label: "➕ Добавить бота и включить", action: "onboard-admin-addbot" },
+            { label: "💬 Расскажи про поиск в сети", action: "onboard-admin-preview-askBot" },
+          ],
+        });
+        break;
+
+      case "onboard-admin-preview-askBot":
+        pushBot({
+          text: "💬 Поиск в сети\n\nУчастники упоминают **@ChatLogixBot** в чате с вопросом — бот спрашивает inline-кнопками, где искать: в сети или в базе знаний чата.\n\nРаботает как универсальный эксперт: свежие данные из интернета, ответы на технические вопросы, разбор сообщений через reply.\n\nБесплатно. Авто-включается при первом mention в чате — можно отключить в настройках. Лимиты антиспама: 1/мин, 15/ч, 50/день на пользователя.\n\nЧтобы включить — добавьте бота в чат 👇",
           buttons: [
             { label: "➕ Добавить бота и включить", action: "onboard-admin-addbot" },
             { label: "🎭 Расскажи про анонимные сообщения", action: "onboard-admin-preview-anon" },
@@ -515,6 +542,14 @@ function PrivateChat() {
         break;
       }
 
+      // ── Создание навыка ──
+      case "create-skill-start":
+        setSkillStep("compose");
+        pushBot({
+          text: "🪄 Создание навыка\n\nРасскажи об идее по такому плану — так нам быстрее понять и оценить:\n\n1️⃣ **Тип** — навык для чата или личный (работает в ЛС бота)?\n2️⃣ **Что делает** — какую задачу или боль закрывает?\n3️⃣ **Как работает** — пример или сценарий: что происходит и когда?\n\nЕсли на какой-то пункт ответа нет — пропусти. Пиши свободно, без шаблонов.",
+        });
+        break;
+
       // ── Помощь ──
       case "help":
         pushBot({
@@ -614,9 +649,20 @@ function PrivateChat() {
         if (action.startsWith("onboard-admin-show-kb:")) {
           const cid = action.split(":")[1];
           pushBot({
-            text: `📚 База знаний\n\nЗнаете это чувство, когда точно помнишь что обсуждали, но найти не можешь? База знаний это решает.\n\nУчастники пишут /search прямо в чате — бот ищет по истории и отвечает с ссылками на нужные сообщения.`,
+            text: `📚 База знаний\n\nЗнаете это чувство, когда точно помнишь что обсуждали, но найти не можешь? База знаний это решает.\n\nУчастники пишут /faq прямо в чате — бот ищет по истории и отвечает с ссылками на нужные сообщения.`,
             buttons: [
               { label: "📚 Включить базу знаний", action: `onboard-admin-kb:${cid}` },
+              { label: "💬 Расскажи про поиск в сети", action: `onboard-admin-show-askBot:${cid}` },
+            ],
+          });
+          break;
+        }
+        if (action.startsWith("onboard-admin-show-askBot:")) {
+          const cid = action.split(":")[1];
+          pushBot({
+            text: `💬 Поиск в сети\n\nУчастники упоминают **@ChatLogixBot** в чате с вопросом — бот спрашивает inline-кнопками, где искать: в сети или в базе знаний чата (если включена).\n\nРаботает как универсальный эксперт: свежие данные из интернета, ответы на технические вопросы, разбор сообщений через reply. Бесплатно, лимиты антиспама: 1/мин, 15/ч, 50/день на пользователя.\n\nАвто-включается при первом mention в чате — можно отключить в настройках.`,
+            buttons: [
+              { label: "💬 Включить поиск в сети", action: `onboard-admin-askBot:${cid}` },
               { label: "🎭 Расскажи про анонимные сообщения", action: `onboard-admin-show-anon:${cid}` },
             ],
           });
@@ -678,9 +724,22 @@ function PrivateChat() {
           const cid = action.split(":")[1];
           const target = chats.find((c) => c.id === cid);
           pushBot({
-            text: `📚 База знаний активирована в «${target?.name}»!\n\nСейчас начнётся индексация последних 10 000 сообщений — это займёт несколько минут. Когда всё будет готово, пришлём уведомление в чат.\n\nПосле этого участники смогут искать через /search, а новые сообщения будут автоматически попадать в базу.`,
+            text: `📚 База знаний активирована в «${target?.name}»!\n\nСейчас начнётся индексация последних 10 000 сообщений — это займёт несколько минут. Когда всё будет готово, пришлём уведомление в чат.\n\nПосле этого участники смогут искать через /faq, а новые сообщения будут автоматически попадать в базу.`,
             buttons: [
               { label: "⚙️ Настроить базу знаний", action: "onboard-admin-settings" },
+              { label: "💬 Расскажи про поиск в сети", action: `onboard-admin-show-askBot:${cid}` },
+            ],
+          });
+          break;
+        }
+        if (action.startsWith("onboard-admin-askBot:")) {
+          const cid = action.split(":")[1];
+          toggleFeature(cid, "askBot");
+          const target = chats.find((c) => c.id === cid);
+          pushBot({
+            text: `💬 Поиск в сети включён в «${target?.name}»!\n\nТеперь любой участник может упомянуть @ChatLogixBot в чате с вопросом — бот ответит и подскажет, где искать (в сети или в базе знаний чата, если включена).\n\nБесплатно. Антиспам: 1 запрос в минуту, 15 в час, 50 в день на пользователя. Отключить можно в настройках.`,
+            buttons: [
+              { label: "⚙️ Настроить поиск в сети", action: "onboard-admin-settings" },
               { label: "🎭 Расскажи про анонимные сообщения", action: `onboard-admin-show-anon:${cid}` },
             ],
           });
@@ -710,6 +769,11 @@ function PrivateChat() {
         if (action.startsWith("open-group:")) {
           pushBot({ text: "Переключи режим вверху на «🔥 Группа», чтобы увидеть сообщение." });
         }
+        if (action.startsWith("view-group-welcome:")) {
+          const cid = action.split(":")[1];
+          setActiveChat(cid);
+          setTabMode("group");
+        }
         break;
     }
   };
@@ -728,6 +792,13 @@ function PrivateChat() {
           { label: "✅ Отправить анонимно", action: "anon-confirm-send" },
           { label: "✏️ Редактировать", action: "anon-edit" },
         ],
+      });
+      return;
+    }
+    if (skillStep === "compose") {
+      setSkillStep("idle");
+      pushBot({
+        text: "✅ Спасибо, идея у команды!\n\nЕсли что-то будет непонятно — напишем уточнить. Как только реализуем — придёт уведомление сюда же.",
       });
       return;
     }
@@ -786,29 +857,35 @@ function PrivateChat() {
         </div>
       </div>
 
-      {/* CHAT BOTTOM MENU — DM-only · 2 columns */}
+      {/* CHAT BOTTOM MENU — DM-only · 2 columns + full-width 3rd row */}
       <div className="backdrop-blur-xl bg-background/80 border-t border-white/8">
-        <div className="max-w-[640px] mx-auto px-2.5 py-2 grid grid-cols-2 gap-2">
-          <div className="flex flex-col gap-1.5">
-            <ChatMenuBtn
-              label="🛠 Logix для твоего чата"
-              onClick={() => navigate({ to: "/chats" })}
-            />
-            <ChatMenuBtn
-              label="➕ Добавить бота в чат"
-              onClick={() => handleAction("addbot")}
-            />
+        <div className="max-w-[640px] mx-auto px-2.5 py-2 flex flex-col gap-1.5">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1.5">
+              <ChatMenuBtn
+                label="🛠 Logix для твоего чата"
+                onClick={() => navigate({ to: "/chats" })}
+              />
+              <ChatMenuBtn
+                label="➕ Добавить бота в чат"
+                onClick={() => handleAction("addbot")}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <ChatMenuBtn
+                label="✨ Logix для тебя"
+                onClick={() => handleAction("user-settings")}
+              />
+              <ChatMenuBtn
+                label="❔ Помощь"
+                onClick={() => handleAction("help")}
+              />
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <ChatMenuBtn
-              label="✨ Logix для тебя"
-              onClick={() => handleAction("user-settings")}
-            />
-            <ChatMenuBtn
-              label="❔ Помощь"
-              onClick={() => handleAction("help")}
-            />
-          </div>
+          <ChatMenuBtn
+            label="💡 Создать свой навык"
+            onClick={() => handleAction("create-skill-start")}
+          />
         </div>
       </div>
 
@@ -825,7 +902,9 @@ function PrivateChat() {
               placeholder={
                 anonStep === "compose" && anonChatId
                   ? `🎭 Анонимно в «${chats.find((c) => c.id === anonChatId)?.name}»…`
-                  : "Сообщение"
+                  : skillStep === "compose"
+                    ? "🪄 Опиши идею навыка своими словами…"
+                    : "Сообщение"
               }
               className="flex-1 bg-transparent outline-none text-[14px]"
             />
@@ -859,6 +938,7 @@ function GroupChat() {
   const chats = useChatsStore((s) => s.chats);
   const activeChatId = useChatsStore((s) => s.activeChatId);
   const setActiveChat = useChatsStore((s) => s.setActiveChat);
+  const setTabMode = useChatsStore((s) => s.setTabMode);
   const messagesByChat = useChatsStore((s) => s.messagesByChat);
   const pushMessage = useChatsStore((s) => s.pushMessage);
   const markSpamDeleted = useChatsStore((s) => s.markSpamDeleted);
@@ -909,6 +989,9 @@ function GroupChat() {
     if (action.startsWith("kb-open")) {
       navigate({ to: "/chat/$chatId", params: { chatId: activeChatId }, hash: "f-kb" });
     }
+    if (action === "open-bot-dm" || action === "open-bot-personal") {
+      setTabMode("private");
+    }
   };
 
   const sendInput = () => {
@@ -916,9 +999,9 @@ function GroupChat() {
     const text = input.trim();
     setInput("");
 
-    // KB: /search
-    if (text.toLowerCase().startsWith("/search")) {
-      const q = text.replace(/^\/search\s*/i, "").trim() || "запрос";
+    // KB: /faq
+    if (text.toLowerCase().startsWith("/faq")) {
+      const q = text.replace(/^\/faq\s*/i, "").trim() || "запрос";
       pushMessage(activeChatId, { from: "user", text });
       setTimeout(() => {
         pushMessage(activeChatId, {
@@ -945,7 +1028,7 @@ function GroupChat() {
     setTimeout(() => {
       pushMessage(activeChatId, {
         from: "bot",
-        text: "Попробуй: `/search тема` для базы знаний, или спам-фразу для проверки антиспама.",
+        text: "Попробуй: `/faq тема` для базы знаний, или спам-фразу для проверки антиспама.",
       });
     }, 500);
   };
@@ -1040,7 +1123,7 @@ function GroupChat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendInput()}
-              placeholder="/search тема, или текст…"
+              placeholder="/faq тема, или текст…"
               className="flex-1 bg-transparent outline-none text-[14px]"
             />
           </div>
@@ -1057,10 +1140,10 @@ function GroupChat() {
   );
 }
 
-function formatText(text: string) {
+function formatText(text: string, onAction?: (a: string) => void) {
   const parts: React.ReactNode[] = [];
-  // Split by **bold** and [blue link] patterns
-  const regex = /(\*\*(.+?)\*\*|\[(.+?)\])/g;
+  // Match: **bold**, [label](action) clickable blue-bold link, [label] display link
+  const regex = /(\*\*(.+?)\*\*|\[([^\]]+?)\]\(([^)]+?)\)|\[([^\]]+?)\])/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   let key = 0;
@@ -1069,13 +1152,23 @@ function formatText(text: string) {
       parts.push(text.slice(lastIndex, match.index));
     }
     if (match[2]) {
-      // **bold**
       parts.push(<strong key={key++}>{match[2]}</strong>);
-    } else if (match[3]) {
-      // [blue link]
+    } else if (match[3] && match[4]) {
+      const action = match[4];
+      const label = match[3];
+      parts.push(
+        <button
+          key={key++}
+          onClick={() => onAction?.(action)}
+          className="font-semibold text-[oklch(0.75_0.14_230)] hover:underline cursor-pointer"
+        >
+          {label}
+        </button>
+      );
+    } else if (match[5]) {
       parts.push(
         <span key={key++} className="text-[oklch(0.75_0.14_230)]">
-          {match[3]}
+          {match[5]}
         </span>
       );
     }
@@ -1121,7 +1214,7 @@ function Bubble({ msg, onAction }: { msg: Msg; onAction: (a: string, label?: str
               : undefined
           }
         >
-          {isSelf ? msg.text : formatText(msg.text)}
+          {isSelf ? msg.text : formatText(msg.text, onAction)}
           <div
             className={`text-[10px] mt-1 ${
               isSelf ? "text-white/70" : "text-muted-foreground"
@@ -1152,7 +1245,6 @@ function GroupBubble({ msg, onAction }: { msg: GroupMsg; onAction: (a: string) =
   const isSelf = msg.from === "user";
   const isSystem = msg.from === "system";
   const isMember = msg.from === "member";
-  const isBot = msg.from === "bot";
 
   if (isSystem) {
     return (
@@ -1194,7 +1286,7 @@ function GroupBubble({ msg, onAction }: { msg: GroupMsg; onAction: (a: string) =
               <div className="flex-1 text-[10px] text-muted-foreground">{msg.voice.duration}</div>
             </div>
           ) : (
-            msg.text
+            formatText(msg.text, onAction)
           )}
           <div
             className={`text-[10px] mt-1 ${
@@ -1204,6 +1296,19 @@ function GroupBubble({ msg, onAction }: { msg: GroupMsg; onAction: (a: string) =
             {msg.time}
           </div>
         </div>
+        {msg.buttons && msg.buttons.length > 0 && (
+          <div className="mt-1.5 flex flex-col gap-1 w-full max-w-[320px]">
+            {msg.buttons.map((b, i) => (
+              <button
+                key={i}
+                onClick={() => onAction(b.action)}
+                className="w-full text-[12px] px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 transition text-center font-medium"
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

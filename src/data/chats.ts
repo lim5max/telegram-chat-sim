@@ -25,6 +25,7 @@ export type Chat = {
   chatPodcast?: { active: boolean; voice: "Onyx" | "Shimmer"; status: string };
   antispam?: { active: boolean; deleted24h: number; paid?: boolean };
   anonymous?: { active: boolean; allowMedia: boolean; sentToday: number };
+  askBot?: { active: boolean };
 };
 
 export const chats: Chat[] = [
@@ -53,6 +54,7 @@ export const chats: Chat[] = [
     chatPodcast: { active: true, voice: "Onyx", status: "Активна до 12.05.2026" },
     antispam: { active: true, deleted24h: 12, paid: true },
     anonymous: { active: true, allowMedia: true, sentToday: 0 },
+    askBot: { active: true },
   },
   {
     id: "product-chatlogix",
@@ -76,6 +78,7 @@ export const chats: Chat[] = [
     chatPodcast: { active: false, voice: "Shimmer", status: "Бесплатная неделя" },
     antispam: { active: true, deleted24h: 3 },
     anonymous: { active: false, allowMedia: false, sentToday: 0 },
+    askBot: { active: false },
   },
   {
     id: "react-ru",
@@ -100,6 +103,7 @@ export const chats: Chat[] = [
     chatPodcast: { active: false, voice: "Shimmer", status: "Бесплатная неделя" },
     antispam: { active: true, deleted24h: 5 },
     anonymous: { active: true, allowMedia: false, sentToday: 0 },
+    askBot: { active: true },
   },
   {
     id: "startup-club",
@@ -123,6 +127,7 @@ export const chats: Chat[] = [
     chatPodcast: { active: true, voice: "Onyx", status: "Активна до 18.05.2026" },
     antispam: { active: false, deleted24h: 0 },
     anonymous: { active: true, allowMedia: true, sentToday: 0 },
+    askBot: { active: true },
   },
   {
     id: "chatlogix-night",
@@ -145,6 +150,7 @@ export const chats: Chat[] = [
     chatPodcast: { active: false, voice: "Onyx", status: "Бесплатная неделя" },
     antispam: { active: false, deleted24h: 0 },
     anonymous: { active: false, allowMedia: false, sentToday: 0 },
+    askBot: { active: false },
   },
 ];
 
@@ -167,7 +173,7 @@ export const superPodcast = {
   price: "$5.99/мес",
 };
 
-export type FeatureKey = "summary" | "voice" | "podcast" | "superPodcast" | "kb" | "antispam" | "anonymous";
+export type FeatureKey = "summary" | "voice" | "podcast" | "superPodcast" | "kb" | "antispam" | "anonymous" | "askBot";
 
 export type Monetization = "free" | "freemium" | "paid";
 
@@ -223,7 +229,7 @@ export const FEATURE_META: Record<
     icon: "📚",
     label: "База знаний",
     short: "Поиск",
-    desc: "Поиск по истории чата командой /search — бот даст краткий ответ.",
+    desc: "Поиск по истории чата командой /faq — бот даст краткий ответ.",
     price: "100 запросов бесплатно",
     audience: "admin",
     monetization: "freemium",
@@ -244,6 +250,15 @@ export const FEATURE_META: Record<
     desc: "Участники пишут через бота — автор скрыт от всех.",
     price: "Бесплатно",
     audience: "both",
+    monetization: "free",
+  },
+  askBot: {
+    icon: "💬",
+    label: "Поиск в сети",
+    short: "Поиск в сети",
+    desc: "Упомяните @ChatLogixBot в чате — бот ответит и подскажет, где искать (в сети или в базе знаний чата). Авто-включается при первом mention, можно отключить.",
+    price: "Бесплатно",
+    audience: "admin",
     monetization: "free",
   },
 };

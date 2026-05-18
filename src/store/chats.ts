@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { chats as initialChats, type Chat, type FeatureKey } from "@/data/chats";
+import { DEFAULT_SUMMARY_STYLE, type SummaryStyleId } from "@/data/summaryStyles";
 
 export type GroupMsg = {
   id: number;
@@ -10,6 +11,7 @@ export type GroupMsg = {
   voice?: { duration: string; caption?: string };
   deleted?: boolean;
   anonymous?: boolean;
+  buttons?: { label: string; action: string }[];
 };
 
 let seq = 5000;
@@ -56,6 +58,7 @@ const seedMessages = (chatId: string): GroupMsg[] => {
 type State = {
   chats: Chat[];
   activeChatId: string;
+  tabMode: "private" | "group";
   messagesByChat: Record<string, GroupMsg[]>;
   adminAlerts: Record<string, number>;
   totalAnonSentToday: number;
@@ -64,7 +67,10 @@ type State = {
   superPodcastSubscription: null | { expiresAt: string }; // null = free tier, object = paid
   superPodcastFreeMinutesUsed: number; // out of 16
   ignoreMeByChat: Record<string, boolean>;
+  summaryStyleByChat: Record<string, SummaryStyleId>;
+  superSummaryStyle: SummaryStyleId;
 
+  setTabMode: (mode: "private" | "group") => void;
   setActiveChat: (id: string) => void;
   setIgnoreMe: (chatId: string, on: boolean) => void;
   toggleFeature: (chatId: string, feature: FeatureKey) => void;
@@ -75,12 +81,15 @@ type State = {
   markSpamDeleted: (chatId: string, msgId: number) => void;
   setSuperSummary: (on: boolean) => void;
   setSuperPodcast: (on: boolean) => void;
+  setSummaryStyle: (chatId: string, style: SummaryStyleId) => void;
+  setSuperSummaryStyle: (style: SummaryStyleId) => void;
   incUsage: (chatId: string, by?: number) => void;
 };
 
 export const useChatsStore = create<State>((set) => ({
   chats: initialChats,
   activeChatId: initialChats[0].id,
+  tabMode: "private",
   messagesByChat: Object.fromEntries(initialChats.map((c) => [c.id, seedMessages(c.id)])),
   adminAlerts: {},
   totalAnonSentToday: 0,
@@ -89,7 +98,10 @@ export const useChatsStore = create<State>((set) => ({
   superPodcastSubscription: { expiresAt: "04.06.2026" },
   superPodcastFreeMinutesUsed: 8,
   ignoreMeByChat: {},
+  summaryStyleByChat: {},
+  superSummaryStyle: DEFAULT_SUMMARY_STYLE,
 
+  setTabMode: (mode) => set({ tabMode: mode }),
   setActiveChat: (id) => set({ activeChatId: id }),
   setIgnoreMe: (chatId, on) =>
     set((state) => ({ ignoreMeByChat: { ...state.ignoreMeByChat, [chatId]: on } })),
@@ -152,6 +164,11 @@ export const useChatsStore = create<State>((set) => ({
                 ...(c.anonymous ?? { allowMedia: false, sentToday: 0 }),
                 active: !(c.anonymous?.active ?? false),
               },
+            };
+          case "askBot":
+            return {
+              ...c,
+              askBot: { active: !(c.askBot?.active ?? false) },
             };
         }
       }),
@@ -238,6 +255,12 @@ export const useChatsStore = create<State>((set) => ({
     // If turning on podcast, auto-enable super-summary
     ...(on && !state.superSummaryOn ? { superSummaryOn: true } : {}),
   })),
+
+  setSummaryStyle: (chatId, style) =>
+    set((state) => ({
+      summaryStyleByChat: { ...state.summaryStyleByChat, [chatId]: style },
+    })),
+  setSuperSummaryStyle: (style) => set({ superSummaryStyle: style }),
 
   incUsage: (chatId, by = 1) =>
     set((state) => ({

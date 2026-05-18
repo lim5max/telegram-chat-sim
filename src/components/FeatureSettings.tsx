@@ -4,6 +4,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { Toggle } from "@/components/Toggle";
 import { useChatsStore } from "@/store/chats";
 import { type FeatureKey, type Chat } from "@/data/chats";
+import { DEFAULT_SUMMARY_STYLE } from "@/data/summaryStyles";
+import { SummaryStylePicker } from "@/components/SummaryStylePicker";
 import { AlertTriangle } from "lucide-react";
 
 export function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -203,11 +205,34 @@ export function FeatureSettings({ fk, chat }: { fk: FeatureKey; chat: Chat }) {
           <div className="glass-card rounded-[20px] p-4 space-y-3">
             <SectionLabel>Настройки</SectionLabel>
             <Setting label="Команда">
-              <span className="font-mono text-[12px]">/search запрос</span>
+              <span className="font-mono text-[12px]">/faq запрос</span>
             </Setting>
             <div className="text-[12px] text-muted-foreground leading-relaxed">
-              Введите <span className="font-mono text-foreground">/search</span> и тему в групповом чате.
+              Введите <span className="font-mono text-foreground">/faq</span> и тему в групповом чате.
               Бот найдёт релевантные обсуждения и выдаст краткий ответ.
+            </div>
+          </div>
+        </>
+      );
+    }
+    case "askBot": {
+      return (
+        <>
+          <div className="glass-card rounded-[20px] p-4 space-y-3">
+            <SectionLabel>Как пользоваться</SectionLabel>
+            <Setting label="Упоминание">
+              <span className="font-mono text-[12px]">@ChatLogixBot вопрос</span>
+            </Setting>
+            <div className="text-[12px] text-muted-foreground leading-relaxed">
+              Упомяните бота в чате — он спросит, где искать: в сети или в базе знаний чата (если включена).
+              Если база знаний выключена — сразу ищет в сети.
+            </div>
+            <div className="text-[12px] text-muted-foreground leading-relaxed">
+              Лимитов на чат нет. Антиспам — не более 1 запроса в минуту, 15 в час и 50 в день
+              на одного пользователя.
+            </div>
+            <div className="text-[12px] text-muted-foreground leading-relaxed">
+              Авто-включается при первом mention в чате. Отключить можно тогглом выше.
             </div>
           </div>
         </>
@@ -257,6 +282,10 @@ export function FeatureSettings({ fk, chat }: { fk: FeatureKey; chat: Chat }) {
 const TIME_PRESETS = ["08:00", "12:00", "16:00", "18:00", "20:00"];
 
 function SummarySettings({ chat }: { chat: Chat }) {
+  const summaryStyle = useChatsStore(
+    (s) => s.summaryStyleByChat[chat.id] ?? DEFAULT_SUMMARY_STYLE,
+  );
+  const setSummaryStyle = useChatsStore((s) => s.setSummaryStyle);
   const [frequency, setFrequency] = useState<1 | 7 | 30>(1);
   const [weekDay, setWeekDay] = useState(0);
   const [monthDay, setMonthDay] = useState(1);
@@ -382,6 +411,19 @@ function SummarySettings({ chat }: { chat: Chat }) {
         <Setting label="Часовой пояс">
           <span className="text-[12px] text-muted-foreground">{timezone}</span>
         </Setting>
+      </div>
+
+      {/* Стиль */}
+      <div className="glass-card rounded-[20px] p-4">
+        <SummaryStylePicker
+          value={summaryStyle}
+          onChange={(id) => {
+            setSummaryStyle(chat.id, id);
+            markDirty();
+            toast(`Стиль изменён: ${id === "uncensored" ? "без цензуры" : id}`);
+          }}
+          context="chat"
+        />
       </div>
 
       {/* Контент */}

@@ -8,6 +8,7 @@ import { Play, ChevronRight, ChevronDown } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { SparklesIcon, HeadphonesIcon, IncognitoIcon } from "@hugeicons/core-free-icons";
 import { ICON_GRADIENTS } from "@/components/FeatureIcon";
+import { SummaryStylePicker } from "@/components/SummaryStylePicker";
 
 export const Route = createFileRoute("/_tabs/me")({
   head: () => ({
@@ -25,6 +26,8 @@ function ForMeScreen() {
 
   const superSummaryOn = useChatsStore((s) => s.superSummaryOn);
   const setSuperSummary = useChatsStore((s) => s.setSuperSummary);
+  const superSummaryStyle = useChatsStore((s) => s.superSummaryStyle);
+  const setSuperSummaryStyle = useChatsStore((s) => s.setSuperSummaryStyle);
   const superPodcastOn = useChatsStore((s) => s.superPodcastOn);
   const setSuperPodcast = useChatsStore((s) => s.setSuperPodcast);
   const superPodcastSubscription = useChatsStore((s) => s.superPodcastSubscription);
@@ -71,8 +74,8 @@ function ForMeScreen() {
         </button>
 
         {expanded === "summary" && (
-          <div className="px-4 pb-4 pt-1 space-y-3 border-t border-white/5">
-            <div className="flex items-center justify-between">
+          <div className="px-4 pb-4 pt-1 space-y-4 border-t border-white/5">
+            <div className="flex items-center justify-between pt-3">
               <div className="text-[13px] text-muted-foreground">
                 Дайджест всех ваших чатов в одном сообщении каждое утро.
               </div>
@@ -84,6 +87,18 @@ function ForMeScreen() {
                 }}
               />
             </div>
+
+            <SummaryStylePicker
+              value={superSummaryStyle}
+              onChange={(id) => {
+                setSuperSummaryStyle(id);
+                toast(id === "uncensored"
+                  ? "Стиль: без цензуры (18+)"
+                  : "Стиль обновлён");
+              }}
+              context="super"
+            />
+
             <button
               onClick={() => navigate({ to: "/" })}
               className="w-full py-2.5 text-[13px] font-medium rounded-xl bg-white/8 hover:bg-white/12 flex items-center justify-center gap-2"
