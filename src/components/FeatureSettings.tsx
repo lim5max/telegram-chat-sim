@@ -815,7 +815,7 @@ function formatSchedule(s: { kind: "daily" | "weekdays" | "weekly"; time: string
 }
 
 function RoutineSettings({ chat }: { chat: Chat }) {
-  const routines = useChatsStore((s) => s.routinesByChat[chat.id] ?? []);
+  const routines = useChatsStore((s) => s.routinesByChat[chat.id]) ?? [];
   const updateRoutine = useChatsStore((s) => s.updateRoutine);
   const deleteRoutine = useChatsStore((s) => s.deleteRoutine);
   const setTabMode = useChatsStore((s) => s.setTabMode);
