@@ -7,7 +7,7 @@ import { FEATURE_META, type FeatureKey } from "@/data/chats";
 import { FeatureIcon, ICON_GRADIENTS } from "@/components/FeatureIcon";
 import { FeatureSettings } from "@/components/FeatureSettings";
 
-const ALL: FeatureKey[] = ["summary", "voice", "podcast", "kb", "antispam", "anonymous"];
+const ALL: FeatureKey[] = ["summary", "voice", "podcast", "kb", "antispam", "anonymous", "routine"];
 
 export const Route = createFileRoute("/chat/$chatId/feature/$featureKey")({
   component: FeatureSettingsPage,
@@ -83,5 +83,9 @@ function isActive(c: Parameters<typeof FeatureSettings>[0]["chat"], fk: FeatureK
       return c.antispam?.active ?? false;
     case "anonymous":
       return c.anonymous?.active ?? false;
+    case "routine":
+      return c.routine?.active ?? false;
+    default:
+      return false;
   }
 }

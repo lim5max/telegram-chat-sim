@@ -8,6 +8,7 @@ import {
   Shield01Icon,
   IncognitoIcon,
   AiChat01Icon,
+  RepeatIcon,
 } from "@hugeicons/core-free-icons";
 import type { FeatureKey } from "@/data/chats";
 
@@ -20,6 +21,7 @@ const FEATURE_ICON_DATA: Record<FeatureKey, typeof CheckListIcon> = {
   antispam: Shield01Icon,
   anonymous: IncognitoIcon,
   askBot: AiChat01Icon,
+  routine: RepeatIcon,
 };
 
 /* macOS-style icon gradients — shared across all pages */
@@ -36,6 +38,7 @@ export const ICON_GRADIENTS: Record<FeatureKey, string> = {
   antispam: BLUE,
   anonymous: PINK,
   askBot: BLUE,
+  routine: BLUE,
 };
 
 export function FeatureIcon({

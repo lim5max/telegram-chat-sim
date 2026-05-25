@@ -1,5 +1,11 @@
 import { create } from "zustand";
-import { chats as initialChats, type Chat, type FeatureKey } from "@/data/chats";
+import {
+  chats as initialChats,
+  type Chat,
+  type FeatureKey,
+  type Routine,
+  SEED_ROUTINES,
+} from "@/data/chats";
 import { DEFAULT_SUMMARY_STYLE, type SummaryStyleId } from "@/data/summaryStyles";
 
 export type GroupMsg = {
@@ -69,8 +75,11 @@ type State = {
   ignoreMeByChat: Record<string, boolean>;
   summaryStyleByChat: Record<string, SummaryStyleId>;
   superSummaryStyle: SummaryStyleId;
+  routinesByChat: Record<string, Routine[]>;
+  pendingBroadcast: string | null;
 
   setTabMode: (mode: "private" | "group") => void;
+  setPendingBroadcast: (action: string | null) => void;
   setActiveChat: (id: string) => void;
   setIgnoreMe: (chatId: string, on: boolean) => void;
   toggleFeature: (chatId: string, feature: FeatureKey) => void;
@@ -84,6 +93,9 @@ type State = {
   setSummaryStyle: (chatId: string, style: SummaryStyleId) => void;
   setSuperSummaryStyle: (style: SummaryStyleId) => void;
   incUsage: (chatId: string, by?: number) => void;
+  addRoutine: (chatId: string, routine: Routine) => void;
+  updateRoutine: (chatId: string, routineId: string, patch: Partial<Routine>) => void;
+  deleteRoutine: (chatId: string, routineId: string) => void;
 };
 
 export const useChatsStore = create<State>((set) => ({
@@ -100,8 +112,11 @@ export const useChatsStore = create<State>((set) => ({
   ignoreMeByChat: {},
   summaryStyleByChat: {},
   superSummaryStyle: DEFAULT_SUMMARY_STYLE,
+  routinesByChat: { ...SEED_ROUTINES },
+  pendingBroadcast: null,
 
   setTabMode: (mode) => set({ tabMode: mode }),
+  setPendingBroadcast: (action) => set({ pendingBroadcast: action }),
   setActiveChat: (id) => set({ activeChatId: id }),
   setIgnoreMe: (chatId, on) =>
     set((state) => ({ ignoreMeByChat: { ...state.ignoreMeByChat, [chatId]: on } })),
@@ -169,6 +184,11 @@ export const useChatsStore = create<State>((set) => ({
             return {
               ...c,
               askBot: { active: !(c.askBot?.active ?? false) },
+            };
+          case "routine":
+            return {
+              ...c,
+              routine: { active: !(c.routine?.active ?? false) },
             };
         }
       }),
@@ -265,6 +285,35 @@ export const useChatsStore = create<State>((set) => ({
   incUsage: (chatId, by = 1) =>
     set((state) => ({
       chats: state.chats.map((c) => (c.id === chatId ? { ...c, used: c.used + by } : c)),
+    })),
+
+  addRoutine: (chatId, routine) =>
+    set((state) => ({
+      routinesByChat: {
+        ...state.routinesByChat,
+        [chatId]: [...(state.routinesByChat[chatId] ?? []), routine],
+      },
+      chats: state.chats.map((c) =>
+        c.id === chatId ? { ...c, routine: { active: true } } : c,
+      ),
+    })),
+
+  updateRoutine: (chatId, routineId, patch) =>
+    set((state) => ({
+      routinesByChat: {
+        ...state.routinesByChat,
+        [chatId]: (state.routinesByChat[chatId] ?? []).map((r) =>
+          r.id === routineId ? { ...r, ...patch } : r,
+        ),
+      },
+    })),
+
+  deleteRoutine: (chatId, routineId) =>
+    set((state) => ({
+      routinesByChat: {
+        ...state.routinesByChat,
+        [chatId]: (state.routinesByChat[chatId] ?? []).filter((r) => r.id !== routineId),
+      },
     })),
 }));
 

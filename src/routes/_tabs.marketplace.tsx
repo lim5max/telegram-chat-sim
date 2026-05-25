@@ -35,6 +35,9 @@ import {
   AtIcon,
   GlobalSearchIcon,
   MessageQuestionIcon,
+  RssIcon,
+  CalendarSetting01Icon,
+  PuzzleIcon,
 } from "@hugeicons/core-free-icons";
 
 export const Route = createFileRoute("/_tabs/marketplace")({
@@ -125,6 +128,14 @@ const FEATURE_DETAILS: Record<FeatureKey, { items: { icon: typeof CheckListIcon;
     ],
     trialText: "Бесплатно · 1/мин, 15/ч, 50/день на пользователя",
   },
+  routine: {
+    items: [
+      { icon: GlobalSearchIcon, title: "Свежие новости и статьи", subtitle: "Бот находит по твоей теме в интернете и публикует со ссылками" },
+      { icon: CalendarSetting01Icon, title: "По расписанию", subtitle: "Раз в день, в 3 дня или в неделю — в выбранное время" },
+      { icon: PuzzleIcon, title: "Настройка за минуту", subtitle: "Опиши тему своими словами в ЛС бота" },
+    ],
+    trialText: "Бесплатно · до 2 рутин на чат",
+  },
 };
 
 /* ------------------------------------------------------------------ */
@@ -140,6 +151,7 @@ const ACCENT_COLORS: Record<FeatureKey, string> = {
   antispam: "oklch(0.60 0.15 230)",
   anonymous: "oklch(0.65 0.18 340)",
   askBot: "oklch(0.65 0.15 230)",
+  routine: "oklch(0.65 0.15 230)",
 };
 
 /* ------------------------------------------------------------------ */
@@ -182,9 +194,9 @@ const FILTERS = [
   { id: "admin", label: "Для админов", audience: "admin" as const },
 ];
 
-const FEATURES: FeatureKey[] = ["summary", "askBot", "voice", "podcast", "superPodcast", "kb", "antispam", "anonymous"];
+const FEATURES: FeatureKey[] = ["summary", "askBot", "routine", "voice", "podcast", "superPodcast", "kb", "antispam", "anonymous"];
 
-const NEW_FEATURES: Set<FeatureKey> = new Set(["podcast", "kb", "askBot"]);
+const NEW_FEATURES: Set<FeatureKey> = new Set(["podcast", "kb", "askBot", "routine"]);
 
 type Status = "free" | "freemium" | "paid" | "active" | "trial";
 
@@ -631,6 +643,7 @@ function isActive(
     antispam?: { active: boolean };
     anonymous?: { active: boolean };
     askBot?: { active: boolean };
+    routine?: { active: boolean };
   },
   fk: FeatureKey,
 ): boolean {
@@ -649,6 +662,8 @@ function isActive(
       return c.anonymous?.active ?? false;
     case "askBot":
       return c.askBot?.active ?? false;
+    case "routine":
+      return c.routine?.active ?? false;
     case "superPodcast":
       return false;
   }

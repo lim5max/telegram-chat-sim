@@ -238,6 +238,8 @@ export function FeatureSettings({ fk, chat }: { fk: FeatureKey; chat: Chat }) {
         </>
       );
     }
+    case "routine":
+      return <RoutineSettings chat={chat} />;
     case "antispam":
       return <AntispamSettings chat={chat} />;
     case "anonymous":
@@ -797,6 +799,120 @@ function AntispamSettings({ chat }: { chat: Chat }) {
       >
         Выключить антиспам
       </button>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Routine settings                                                   */
+/* ------------------------------------------------------------------ */
+
+function formatSchedule(s: { kind: "daily" | "weekdays" | "weekly"; time: string; weekDay?: number }): string {
+  if (s.kind === "daily") return `Ежедневно в ${s.time}`;
+  if (s.kind === "weekdays") return `Будни в ${s.time}`;
+  const days = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+  return `${days[s.weekDay ?? 1]} в ${s.time}`;
+}
+
+function RoutineSettings({ chat }: { chat: Chat }) {
+  const routines = useChatsStore((s) => s.routinesByChat[chat.id] ?? []);
+  const updateRoutine = useChatsStore((s) => s.updateRoutine);
+  const deleteRoutine = useChatsStore((s) => s.deleteRoutine);
+  const setTabMode = useChatsStore((s) => s.setTabMode);
+  const navigate = useNavigate();
+
+  const openWizard = () => {
+    setTabMode("private");
+    navigate({ to: "/", search: { startRoutineFor: chat.id } as never });
+  };
+
+  return (
+    <>
+      <div className="glass-card rounded-[20px] p-4 space-y-2">
+        <SectionLabel>Как работает</SectionLabel>
+        <div className="text-[13px] text-muted-foreground leading-relaxed">
+          Бот по расписанию публикует в чат подборки из сети по твоей теме.
+          Описываешь запрос своими словами — бот находит и присылает со ссылками на источники.
+        </div>
+        <div className="text-[12px] text-muted-foreground leading-relaxed">
+          Бесплатно. До 2 рутин на чат.
+        </div>
+      </div>
+
+      <div className="glass-card rounded-[20px] p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <SectionLabel>Рутины чата</SectionLabel>
+          <span className="text-[11px] text-muted-foreground">{routines.length} из 2</span>
+        </div>
+
+        {routines.length === 0 ? (
+          <div className="text-[13px] text-muted-foreground text-center py-4">
+            Пока ни одной рутины.<br />
+            Создайте первую в ЛС бота — там пошаговый wizard.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {routines.map((r) => (
+              <div key={r.id} className="bg-white/4 rounded-xl p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[14px] font-semibold truncate">{r.name}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {formatSchedule(r.schedule)} · топ-{r.topN}
+                    </div>
+                  </div>
+                  <Toggle
+                    defaultOn={r.active}
+                    onChange={(v) => {
+                      updateRoutine(chat.id, r.id, { active: v });
+                      toast(v ? "Рутина включена" : "Рутина на паузе");
+                    }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {r.sources.map((src, i) => (
+                    <span
+                      key={i}
+                      className="text-[10px] px-2 py-0.5 rounded-md bg-white/8 text-muted-foreground"
+                    >
+                      {src.label}
+                    </span>
+                  ))}
+                </div>
+                {r.lastRunAt && (
+                  <div className="text-[10px] text-muted-foreground">
+                    Последний пост: {r.lastRunAt}
+                  </div>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={openWizard}
+                    className="flex-1 text-[11px] py-1.5 rounded-lg bg-white/6 hover:bg-white/10 transition"
+                  >
+                    Изменить
+                  </button>
+                  <button
+                    onClick={() => {
+                      deleteRoutine(chat.id, r.id);
+                      toast("Рутина удалена");
+                    }}
+                    className="flex-1 text-[11px] py-1.5 rounded-lg bg-white/6 hover:bg-white/10 text-[oklch(0.78_0.18_25)] transition"
+                  >
+                    Удалить
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={openWizard}
+          className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
+        >
+          + Создать рутину в боте
+        </button>
+      </div>
     </>
   );
 }

@@ -26,6 +26,63 @@ export type Chat = {
   antispam?: { active: boolean; deleted24h: number; paid?: boolean };
   anonymous?: { active: boolean; allowMedia: boolean; sentToday: number };
   askBot?: { active: boolean };
+  routine?: { active: boolean };
+};
+
+export type RoutineSourceKind = "rss" | "x" | "reddit" | "tg" | "site" | "crypto" | "hn" | "github";
+
+export type RoutineSource = {
+  url: string;
+  kind: RoutineSourceKind;
+  label: string;
+};
+
+export type RoutineSchedule =
+  | { kind: "daily"; time: string }
+  | { kind: "weekdays"; time: string }
+  | { kind: "weekly"; time: string; weekDay: number };
+
+export type Routine = {
+  id: string;
+  name: string;
+  template: "crypto" | "dev" | "news" | "custom";
+  sources: RoutineSource[];
+  schedule: RoutineSchedule;
+  topN: number;
+  active: boolean;
+  lastRunAt?: string;
+  prompt?: string;
+  intervalDays?: number;
+};
+
+export const ROUTINE_TEMPLATES: Record<
+  "crypto" | "dev" | "news" | "custom",
+  { label: string; emoji: string; sources: RoutineSource[] }
+> = {
+  crypto: {
+    label: "Крипта",
+    emoji: "🪙",
+    sources: [
+      { url: "https://www.coindesk.com/arc/outboundfeeds/rss/", kind: "rss", label: "CoinDesk" },
+      { url: "coingecko:top3", kind: "crypto", label: "Курсы BTC/ETH/SOL" },
+    ],
+  },
+  dev: {
+    label: "Dev / IT",
+    emoji: "💻",
+    sources: [
+      { url: "https://news.ycombinator.com/", kind: "hn", label: "Hacker News" },
+      { url: "https://github.com/trending", kind: "github", label: "GitHub Trending" },
+    ],
+  },
+  news: {
+    label: "Новости",
+    emoji: "📰",
+    sources: [
+      { url: "https://meduza.io/rss/all", kind: "rss", label: "Meduza" },
+    ],
+  },
+  custom: { label: "С нуля", emoji: "✨", sources: [] },
 };
 
 export const chats: Chat[] = [
@@ -55,6 +112,7 @@ export const chats: Chat[] = [
     antispam: { active: true, deleted24h: 12, paid: true },
     anonymous: { active: true, allowMedia: true, sentToday: 0 },
     askBot: { active: true },
+    routine: { active: true },
   },
   {
     id: "product-chatlogix",
@@ -79,6 +137,7 @@ export const chats: Chat[] = [
     antispam: { active: true, deleted24h: 3 },
     anonymous: { active: false, allowMedia: false, sentToday: 0 },
     askBot: { active: false },
+    routine: { active: false },
   },
   {
     id: "react-ru",
@@ -104,6 +163,7 @@ export const chats: Chat[] = [
     antispam: { active: true, deleted24h: 5 },
     anonymous: { active: true, allowMedia: false, sentToday: 0 },
     askBot: { active: true },
+    routine: { active: true },
   },
   {
     id: "startup-club",
@@ -128,6 +188,7 @@ export const chats: Chat[] = [
     antispam: { active: false, deleted24h: 0 },
     anonymous: { active: true, allowMedia: true, sentToday: 0 },
     askBot: { active: true },
+    routine: { active: true },
   },
   {
     id: "chatlogix-night",
@@ -151,6 +212,7 @@ export const chats: Chat[] = [
     antispam: { active: false, deleted24h: 0 },
     anonymous: { active: false, allowMedia: false, sentToday: 0 },
     askBot: { active: false },
+    routine: { active: false },
   },
 ];
 
@@ -173,7 +235,7 @@ export const superPodcast = {
   price: "$5.99/мес",
 };
 
-export type FeatureKey = "summary" | "voice" | "podcast" | "superPodcast" | "kb" | "antispam" | "anonymous" | "askBot";
+export type FeatureKey = "summary" | "voice" | "podcast" | "superPodcast" | "kb" | "antispam" | "anonymous" | "askBot" | "routine";
 
 export type Monetization = "free" | "freemium" | "paid";
 
@@ -261,4 +323,59 @@ export const FEATURE_META: Record<
     audience: "admin",
     monetization: "free",
   },
+  routine: {
+    icon: "🔁",
+    label: "Рутина чата",
+    short: "Рутина",
+    desc: "Запланированные посты в чат из внешних источников: RSS, X, Reddit, сайты, крипто-курсы. Админ собирает в ЛС бота через пошаговый wizard.",
+    price: "1 рутина бесплатно",
+    audience: "admin",
+    monetization: "freemium",
+  },
+};
+
+export const SEED_ROUTINES: Record<string, Routine[]> = {
+  "kurery-msk": [
+    {
+      id: "r-kurery-1",
+      name: "Курсы валют утром",
+      template: "custom",
+      sources: [
+        { url: "cbr:usd-eur-cny", kind: "crypto", label: "Курсы ЦБ РФ" },
+      ],
+      schedule: { kind: "daily", time: "09:00" },
+      topN: 3,
+      active: true,
+      lastRunAt: "сегодня 09:00",
+    },
+  ],
+  "react-ru": [
+    {
+      id: "r-react-1",
+      name: "Dev-новости",
+      template: "dev",
+      sources: [
+        { url: "https://news.ycombinator.com/", kind: "hn", label: "Hacker News" },
+        { url: "https://github.com/trending", kind: "github", label: "GitHub Trending" },
+      ],
+      schedule: { kind: "daily", time: "10:00" },
+      topN: 5,
+      active: true,
+      lastRunAt: "сегодня 10:00",
+    },
+  ],
+  "startup-club": [
+    {
+      id: "r-startup-1",
+      name: "Стартап-дайджест",
+      template: "news",
+      sources: [
+        { url: "https://techcrunch.com/feed/", kind: "rss", label: "TechCrunch" },
+      ],
+      schedule: { kind: "weekly", time: "10:00", weekDay: 1 },
+      topN: 5,
+      active: true,
+      lastRunAt: "пн 10:00",
+    },
+  ],
 };

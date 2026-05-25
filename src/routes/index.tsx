@@ -375,6 +375,16 @@ function PrivateChat() {
     const { prompt, digest, intervalDays = 1, time, tz } = routineDraft;
     if ((!isPersonal && !target) || !prompt || !digest) return;
 
+    const existing = routinesByChat[chatId] ?? [];
+    if (existing.length >= 2) {
+      pushBot({
+        text: `⚠️ Лимит — 2 рутины ${isPersonal ? "в личке" : `на чат «${target!.name}»`}.\n\nУдали одну, чтобы создать новую.`,
+        buttons: [{ label: "⚙️ Открыть настройки", action: isPersonal ? "open-app" : `routine-settings:${chatId}` }],
+      });
+      setRoutineDraft({});
+      return;
+    }
+
     const name = prompt.slice(0, 40);
     const label = everyLabel(intervalDays, time, tz);
     const routine: Routine = {
