@@ -16,10 +16,14 @@ import {
   X,
 } from "lucide-react";
 import { useChatsStore, type GroupMsg } from "@/store/chats";
-import type { Chat } from "@/data/chats";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sparkles } from "lucide-react";
+import type { Chat, Routine } from "@/data/chats";
+import { fetchRoutineDigest } from "@/lib/routineFetch";
 
 const searchSchema = z.object({
   anon: z.string().optional(),
+  startRoutineFor: z.string().optional(),
 });
 
 export const Route = createFileRoute("/")({
@@ -68,13 +72,111 @@ const initialPrivate: Msg[] = [
   },
 ];
 
+const WHATS_NEW_POSTS: { id: string; action: string; emoji: string; title: string; date: string; needsImage?: boolean }[] = [
+  {
+    id: "anon",
+    action: "broadcast-anon",
+    emoji: "🎭",
+    title: "Анонимные сообщения — подшути над коллегой",
+    date: "сегодня",
+  },
+  {
+    id: "kb-drop",
+    action: "broadcast-kb-drop",
+    emoji: "📚",
+    title: "База знаний — чат теперь сам отвечает",
+    date: "вчера",
+  },
+  {
+    id: "kb-pain",
+    action: "broadcast-kb-pain",
+    emoji: "😩",
+    title: "Новичок задаёт вопрос в 51-й раз",
+    date: "2 дня назад",
+  },
+  {
+    id: "kb-howto",
+    action: "broadcast-kb-howto",
+    emoji: "📚",
+    title: "Как пользоваться Базой знаний",
+    date: "3 дня назад",
+  },
+  {
+    id: "kb-courses",
+    action: "broadcast-kb-courses",
+    emoji: "🎓",
+    title: "База знаний для авторов курсов",
+    date: "4 дня назад",
+  },
+  {
+    id: "kb-case",
+    action: "broadcast-kb-case",
+    emoji: "💬",
+    title: "Кейс: бот нашёл пост от 14 апреля",
+    date: "5 дней назад",
+    needsImage: true,
+  },
+  {
+    id: "antispam-drop",
+    action: "broadcast-antispam-drop",
+    emoji: "🛡",
+    title: "Антиспам — спам сам вылетает из чата",
+    date: "неделю назад",
+  },
+  {
+    id: "antispam-pain",
+    action: "broadcast-antispam-pain",
+    emoji: "🤖",
+    title: "Бот залетел в 3 ночи — что делать",
+    date: "неделю назад",
+  },
+  {
+    id: "antispam-stats",
+    action: "broadcast-antispam-stats",
+    emoji: "🛡",
+    title: "Антиспам удалил 12 сообщений за вчера",
+    date: "8 дней назад",
+    needsImage: true,
+  },
+  {
+    id: "antispam-pro",
+    action: "broadcast-antispam-pro",
+    emoji: "💎",
+    title: "Antispam Free vs Pro — что выбрать",
+    date: "9 дней назад",
+  },
+  {
+    id: "antispam-meme",
+    action: "broadcast-antispam-meme",
+    emoji: "🤡",
+    title: "«Заработок без вложений» 🗑",
+    date: "10 дней назад",
+  },
+  {
+    id: "update",
+    action: "broadcast-update",
+    emoji: "🚀",
+    title: "Logix: самое большое обновление",
+    date: "на прошлой неделе",
+  },
+];
+
 function TelegramScreen() {
   const mode = useChatsStore((s) => s.tabMode);
   const setMode = useChatsStore((s) => s.setTabMode);
+  const setPendingBroadcast = useChatsStore((s) => s.setPendingBroadcast);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+
+  const triggerBroadcast = (action: string) => {
+    setMode("private");
+    setPendingBroadcast(action);
+    setWhatsNewOpen(false);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="sticky top-0 z-20 backdrop-blur-xl bg-background/70 border-b border-white/8">
-        <div className="max-w-[640px] mx-auto px-3 py-2 flex gap-2">
+        <div className="max-w-[640px] mx-auto px-3 py-2 flex gap-2 items-center">
           <button
             onClick={() => setMode("private")}
             className={`flex-1 text-[12px] font-medium py-2 rounded-full transition ${
@@ -97,6 +199,44 @@ function TelegramScreen() {
           >
             <AppWindow size={13} /> Mini App
           </Link>
+          <Popover open={whatsNewOpen} onOpenChange={setWhatsNewOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className="text-[12px] font-medium py-2 px-2.5 rounded-full bg-white/5 text-muted-foreground hover:text-white hover:bg-white/10 transition flex items-center gap-1"
+                aria-label="Что нового"
+              >
+                <Sparkles size={13} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" sideOffset={8} className="w-80 p-2">
+              <div className="px-2 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground sticky top-0 bg-popover">
+                Что нового
+              </div>
+              <div className="flex flex-col max-h-[60vh] overflow-y-auto">
+                {WHATS_NEW_POSTS.map((post) => (
+                  <button
+                    key={post.id}
+                    onClick={() => triggerBroadcast(post.action)}
+                    className="text-left px-2 py-2 rounded-md hover:bg-white/5 transition"
+                  >
+                    <div className="text-[13px] font-medium flex items-start gap-2">
+                      <span>{post.emoji}</span>
+                      <span className="flex-1">{post.title}</span>
+                      {post.needsImage && (
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/20 whitespace-nowrap"
+                          title="Нужна картинка/скрин при публикации"
+                        >
+                          📷
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground pl-6">{post.date}</div>
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -110,6 +250,8 @@ function PrivateChat() {
   const search = Route.useSearch();
   const sendAnonymous = useChatsStore((s) => s.sendAnonymous);
   const chats = useChatsStore((s) => s.chats);
+  const pendingBroadcast = useChatsStore((s) => s.pendingBroadcast);
+  const setPendingBroadcast = useChatsStore((s) => s.setPendingBroadcast);
   const totalAnon = useChatsStore((s) => s.totalAnonSentToday);
   const superSummaryOn = useChatsStore((s) => s.superSummaryOn);
   const setSuperSummary = useChatsStore((s) => s.setSuperSummary);
@@ -127,13 +269,29 @@ function PrivateChat() {
   const [pendingText, setPendingText] = useState("");
   const [ignoringMe, setIgnoringMe] = useState(false);
   const [showChatPicker, setShowChatPicker] = useState(false);
+  const [chatPickerMode, setChatPickerMode] = useState<"addbot" | "routine" | "routine-pick">("addbot");
   const [onboardChatId, setOnboardChatId] = useState<string | null>(null);
+
+  // Routine wizard
+  const [routineStep, setRoutineStep] = useState<"idle" | "prompt" | "time">("idle");
+  const [routineDraft, setRoutineDraft] = useState<{
+    chatId?: string;
+    prompt?: string;
+    intervalDays?: number;
+    time?: string;
+    tz?: string;
+    digest?: string;
+    edits?: number;
+  }>({});
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const toggleFeature = useChatsStore((s) => s.toggleFeature);
   const pushGroupMessage = useChatsStore((s) => s.pushMessage);
   const setActiveChat = useChatsStore((s) => s.setActiveChat);
   const setTabMode = useChatsStore((s) => s.setTabMode);
+  const addRoutine = useChatsStore((s) => s.addRoutine);
+  const routinesByChat = useChatsStore((s) => s.routinesByChat);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -152,8 +310,151 @@ function PrivateChat() {
       }
       navigate({ to: "/", replace: true });
     }
+    if (search.startRoutineFor) {
+      const target = chats.find((c) => c.id === search.startRoutineFor);
+      if (target) {
+        startRoutineWizard(target.id);
+      }
+      navigate({ to: "/", replace: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!pendingBroadcast) return;
+    const action = pendingBroadcast;
+    setPendingBroadcast(null);
+    handleAction(action);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingBroadcast]);
+
+  const everyLabel = (days: number, time?: string, tz?: string) => {
+    const base =
+      days === 1 ? "раз в день" : days === 7 ? "раз в неделю" : `раз в ${days} дн.`;
+    if (!time) return base;
+    return `${base} в ${time}${tz ? ` ${tz}` : ""}`;
+  };
+
+  const previewRoutine = async (promptOverride?: string) => {
+    const prompt = promptOverride ?? routineDraft.prompt;
+    if (!prompt) return;
+
+    setRoutineStep("idle");
+    pushBot({ text: "🔎 Собираю данные на текущую дату и время…" });
+
+    let digest: string;
+    try {
+      const res = await fetchRoutineDigest({ data: prompt });
+      digest = res.text;
+    } catch (e) {
+      pushBot({
+        text: `⚠️ Не удалось получить данные: ${e instanceof Error ? e.message : "ошибка"}.\n\nПопробуй ещё раз позже.`,
+      });
+      return;
+    }
+
+    setRoutineDraft((d) => ({ ...d, digest }));
+    const left = 3 - (routineDraft.edits ?? 0);
+    const name = prompt.slice(0, 40);
+    const isPersonal = routineDraft.chatId === "__me__";
+    pushBot({
+      text: `👀 Сейчас покажу, как это будет выглядеть ${isPersonal ? "в ЛС" : "в чате"}:\n\n━━━━━━━━━\n📰 ${name}\n\n${digest}\n━━━━━━━━━\n\nСохранить рутину?${left > 0 ? `\n\n✏️ Правок осталось: ${left}` : ""}`,
+      buttons: [
+        { label: "💾 Сохранить", action: "routine-save" },
+        ...(left > 0
+          ? [{ label: "✏️ Изменить запрос", action: "routine-edit-prompt" }]
+          : []),
+        { label: "🗑 Удалить", action: "routine-discard" },
+      ],
+    });
+  };
+
+  const saveRoutine = (chatId: string) => {
+    const isPersonal = chatId === "__me__";
+    const target = isPersonal ? null : chats.find((c) => c.id === chatId);
+    const { prompt, digest, intervalDays = 1, time, tz } = routineDraft;
+    if ((!isPersonal && !target) || !prompt || !digest) return;
+
+    const name = prompt.slice(0, 40);
+    const label = everyLabel(intervalDays, time, tz);
+    const routine: Routine = {
+      id: `r-${Date.now()}`,
+      name,
+      template: "custom",
+      sources: [],
+      schedule: { kind: "daily", time: time ?? "09:00" },
+      topN: 5,
+      active: true,
+      lastRunAt: "только что",
+      prompt,
+      intervalDays,
+    };
+    addRoutine(chatId, routine);
+
+    if (isPersonal) {
+      pushBot({
+        text: `✅ Моя Рутина создана!\n\nБудет приходить ${label} прямо сюда, в ЛС. Данные собираются в сети на момент каждого выпуска.`,
+        buttons: [
+          { label: "📤 Прислать выпуск сейчас", action: `routine-send:__me__` },
+          { label: "⚙️ Настроить мои рутины", action: "open-app" },
+        ],
+      });
+    } else {
+      pushBot({
+        text: `✅ Рутина создана для «${target!.name}»!\n\nБудет выходить ${label}, данные собираются в сети на момент каждого выпуска.`,
+        buttons: [
+          { label: "📤 Отправить в чат сейчас", action: `routine-send:${chatId}` },
+          { label: "⚙️ Открыть настройки", action: `routine-settings:${chatId}` },
+        ],
+      });
+    }
+  };
+
+  const sendRoutineToChat = (chatId: string) => {
+    const isPersonal = chatId === "__me__";
+    const target = isPersonal ? null : chats.find((c) => c.id === chatId);
+    const { prompt, digest, intervalDays = 1, time, tz } = routineDraft;
+    if ((!isPersonal && !target) || !prompt || !digest) return;
+
+    const name = prompt.slice(0, 40);
+    const label = everyLabel(intervalDays, time, tz);
+    const post = `📰 ${name}\n\n${digest}\n\n⚙️ Моя Рутина · ${label} · /routines`;
+
+    if (isPersonal) {
+      setRoutineDraft({});
+      pushBot({ text: post });
+      return;
+    }
+
+    pushGroupMessage(chatId, {
+      from: "bot",
+      text: `📰 ${name}\n\n${digest}\n\n⚙️ Рутина · ${label} · /routines`,
+    });
+
+    setRoutineDraft({});
+    pushBot({
+      text: `📤 Опубликовано в «${target!.name}»!`,
+      buttons: [
+        { label: "👀 Посмотреть пост в чате", action: `view-group-welcome:${chatId}` },
+      ],
+    });
+  };
+
+  const beginRoutinePrompt = (chatId: string) => {
+    const isPersonal = chatId === "__me__";
+    setRoutineDraft({ chatId });
+    setRoutineStep("prompt");
+    pushBot({
+      text: isPersonal
+        ? `🔁 Моя Рутина\n\nОпиши своими словами, что присылать тебе в ЛС. Бот находит это в сети и регулярно публикует со ссылками на источники.\n\nНапример:\n• «свежие новости про ИИ и LLM»\n• «главные события крипторынка: BTC, ETH»\n• «интересные события в Москве»\n• «новые статьи на тему психологии»`
+        : `🔁 Новая рутина\n\nОпиши своими словами, что присылать в чат. Бот находит это в сети и регулярно публикует в чат со ссылками на источники.\n\nНапример:\n• «свежие новости про ИИ и LLM»\n• «главные события крипторынка: BTC, ETH»\n• «интересные события в Москве»\n• «новые статьи на тему психологии»`,
+    });
+  };
+
+  const startRoutineWizard = (_chatId?: string) => {
+    setChatPickerMode("routine-pick");
+    setShowChatPicker(true);
+  };
 
   const pushBot = (m: Omit<Msg, "id" | "from" | "time">) => {
     setTyping(true);
@@ -167,6 +468,16 @@ function PrivateChat() {
 
   const handleChatPicked = (chatId: string) => {
     setShowChatPicker(false);
+    if (chatPickerMode === "routine-pick") {
+      setChatPickerMode("addbot");
+      beginRoutinePrompt(chatId);
+      return;
+    }
+    if (chatPickerMode === "routine") {
+      setChatPickerMode("addbot");
+      saveRoutine(chatId);
+      return;
+    }
     setOnboardChatId(chatId);
     const target = chats.find((c) => c.id === chatId);
     if (!target) return;
@@ -216,6 +527,127 @@ function PrivateChat() {
     switch (action) {
       case "open-app":
         setTimeout(() => navigate({ to: "/home" }), 200);
+        break;
+
+      case "broadcast-update":
+        pushBot({
+          text:
+            "🚀 **Logix: самое большое обновление**\n\nЗа последние месяцы сильно прокачали бота. Теперь Logix помогает не только участникам быть в курсе происходящего, но и админам — организовывать накопленную информацию, справляться со спамом и растить вовлечённость. А каждому пользователю Telegram — управлять потоком из всех чатов в одном месте, лично для себя.\n\n**Новые навыки чата:**\n\n🎙 **Chat Podcast** — расширенное саммари в виде аудио-подкаста\n🎤 **Расшифровка голосовых** — аудио-сообщения превращаются в текст и попадают в саммари\n📚 **База знаний** — задайте вопрос в чате и AI-агент ответит на основе истории сообщений\n🛡 **Антиспам** — полноценная защита от спама, ботов, рекламы и мата\n🎭 **Анонимные сообщения** — участники могут отправлять анонимки прямо в чат\n\n**Персональные навыки:**\n\n✨ **Super-Summary** — одна сводка из всех твоих чатов в ЛС\n🎧 **Super Podcast** — личный аудио-дайджест по супер-саммари\n🎭 **Анонимные сообщения** — отправляй анонимки в любой подключённый чат прямо из ЛС бота\n\nМы также сделали крутой Mini App, в котором вы можете управлять своими навыками. Открывай и пробуй 👇",
+          buttons: [
+            { label: "➕ Добавить в чат", action: "addbot" },
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-anon":
+        pushBot({
+          text:
+            "🎭 Хочется подшутить над коллегой в общем чате, без палева? Теперь можно с новым навыком.\n\n1. Зайдите в ChatLogix\n2. Выберите раздел «Logix для тебя»\n3. Нажмите на навык «Анонимные сообщения»\n4. Отправьте в нужный чат и поднимите настроение всем кто в чате\n\nПишите в комментариях ваши идеи для приколов 😈",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-kb-drop":
+        pushBot({
+          text:
+            "📚 В чат снова пришёл человек с вопросом «где было про оплату?» — теперь можно не искать старые сообщения вручную.\n\nПишешь:\n\n/faq оплата\n\nБот находит нужный ответ в истории и кидает ссылку.\n\nЧтобы включить:\n1. Открой ChatLogix\n2. Раздел «Logix для чата»\n3. Навык «База знаний»\n\nЗакрепы можно расчищать 📌",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-kb-pain":
+        pushBot({
+          text:
+            "😩 Чат на 400 человек.\n\nНовый участник снова спрашивает:\n\n— «а где была инструкция?»\n\nКто-то ищет старый пост.\nКто-то кидает скрин.\nАдмин делает вид, что не видел сообщение.\n\nС «Базой знаний» человек просто пишет:\n\n/faq инструкция\n\nИ бот сам находит нужное сообщение.",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-kb-howto":
+        pushBot({
+          text:
+            "📚 Как разгрузить себя в чате курса или платного комьюнити.\n\nКаждый день три-четыре одинаковых вопроса: где запись, когда дедлайн, как оплатить.\n\nЗаводишь «Базу знаний» один раз — дальше ученики пишут прямо в чат:\n\n/faq запись\n/faq дедлайн\n/faq оплата\n\nБот сам находит ответ в истории и кидает ссылку.\n\n100 запросов в месяц бесплатно — большинству чатов хватает.",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-kb-courses":
+        pushBot({
+          text:
+            "🎓 Авторам курсов посвящается.\n\nЧат на 700 учеников.\n\nКаждый день одни и те же вопросы:\n\n— где дедлайн\n— как оплатить\n— где запись урока\n\n«База знаний» забирает это на себя.\n\nУченик пишет:\n\n/faq дедлайн\n\nИ бот кидает нужное сообщение со ссылкой.",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-kb-case":
+        pushBot({
+          text:
+            "📸 Подписчик скинул, как «База знаний» работает у него в чате на 600 человек.\n\nКто-то пишет:\n\n«а где было про возврат денег?»\n\nОтвечает уже бот 👇\n\n[скрин ответа]\n\nВ ответе — цитата админа от 14 апреля и три ссылки на оригиналы сообщений в истории чата.",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-antispam-drop":
+        pushBot({
+          text:
+            "🛡 В чат снова залетает бот с «🔥 РАБОТА НА ДОМУ 50К/ДЕНЬ»? Теперь не нужно сидеть и удалять руками.\n\n«Антиспам» сам режет рекламу, ботов и мат. Включая обходы через «р@боту» и «р0б0ту».\n\nЧтобы включить:\n1. Открой ChatLogix\n2. Раздел «Logix для чата»\n3. Навык «Антиспам»\n\nДальше работает фоном.",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-antispam-pain":
+        pushBot({
+          text:
+            "😩 В три ночи в чат залетает:\n\n🔥 ЗАРАБОТОК ИЗ ДОМА 500$ В ДЕНЬ 🔥\n\nПока админ спит, сообщение уже успевают прочитать человек двадцать.\n\nС «Антиспамом» такие сообщения живут примерно секунду.\n\nПодключается в разделе «Logix для чата».",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-antispam-stats":
+        pushBot({
+          text:
+            "🛡 За ночь «Антиспам» удалил в чате «Здоровое питание»:\n\n— 4 рекламных бота\n— 5 матных эпизодов\n— 3 ссылки на казино\n\nАдмин Анна спала.\n\n[скрин deleted24h]",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-antispam-pro":
+        pushBot({
+          text:
+            "🛡 Разница между Free и Pro в «Антиспаме» — короткая.\n\nFree (бесплатно) ловит: спам, рекламу, мат, обходы через транслит.\n\nPro ($2.49/мес) сверху: умные фильтры по контексту, кастомные правила и недельный отчёт «кого забанили и за что».\n\nЕсли в чате 30+ человек и кто-то регулярно прорывается — есть смысл смотреть Pro.",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
+        break;
+
+      case "broadcast-antispam-meme":
+        pushBot({
+          text:
+            "🤡 Спамер:\n\n«Заработок без вложений»\n\n«Антиспам»:\n\n🗑\n\nУдалено за 1.4 секунды.",
+          buttons: [
+            { label: "📱 Открыть Mini App", action: "open-app" },
+          ],
+        });
         break;
 
       // ── Onboarding: Admin flow ──
@@ -271,7 +703,17 @@ function PrivateChat() {
 
       case "onboard-admin-preview-askBot":
         pushBot({
-          text: "💬 Поиск в сети\n\nУчастники упоминают **@ChatLogixBot** в чате с вопросом — бот спрашивает inline-кнопками, где искать: в сети или в базе знаний чата.\n\nРаботает как универсальный эксперт: свежие данные из интернета, ответы на технические вопросы, разбор сообщений через reply.\n\nБесплатно. Авто-включается при первом mention в чате — можно отключить в настройках. Лимиты антиспама: 1/мин, 15/ч, 50/день на пользователя.\n\nЧтобы включить — добавьте бота в чат 👇",
+          text: "💬 Поиск в сети\n\nУчастники упоминают **@ChatLogixBot** в чате с вопросом — и бот находит ответ в интернете: свежие новости, факты, разбор по теме. Отвечает со ссылками на источники.\n\nМожно спросить и про сообщение в чате — просто ответь на него с упоминанием бота.\n\nЧтобы включить — добавьте бота в чат 👇",
+          buttons: [
+            { label: "➕ Добавить бота и включить", action: "onboard-admin-addbot" },
+            { label: "🔁 Расскажи про рутины чата", action: "onboard-admin-preview-routine" },
+          ],
+        });
+        break;
+
+      case "onboard-admin-preview-routine":
+        pushBot({
+          text: "🔁 Рутина чата\n\nУстали каждый день руками искать и кидать в чат свежие новости, релизы и курсы? Рутина чата делает это за вас.\n\nБот сам собирает инфу с открытых источников в сети — и публикует её в чат по расписанию.\n\nЧтобы включить — добавьте бота в чат 👇",
           buttons: [
             { label: "➕ Добавить бота и включить", action: "onboard-admin-addbot" },
             { label: "🎭 Расскажи про анонимные сообщения", action: "onboard-admin-preview-anon" },
@@ -342,7 +784,7 @@ function PrivateChat() {
           text: "🎧 Super Podcast\n\nЭто расширенная аудио-версия Super-Summary. Можно слушать за рулём, на прогулке или по дороге на работу — не нужно читать. Приходит одним голосовым сообщением каждое утро.",
           buttons: [
             { label: "🎧 Включить Super Podcast", action: "onboard-user-podcast" },
-            { label: "🕵️ Расскажи про анонимные сообщения", action: "onboard-user-show-anon" },
+            { label: "🔁 Расскажи про Мою Рутину", action: "onboard-user-show-routine" },
           ],
         });
         break;
@@ -353,9 +795,23 @@ function PrivateChat() {
           text: "🎧 Super Podcast включён!\n\nПервый выпуск придёт завтра вместе с Super-Summary. Выбрать голос и управлять подпиской можно в настройках.",
           buttons: [
             { label: "⚙️ Настроить Super Podcast", action: "open-app" },
+            { label: "🔁 Расскажи про Мою Рутину", action: "onboard-user-show-routine" },
+          ],
+        });
+        break;
+
+      case "onboard-user-show-routine":
+        pushBot({
+          text: "🔁 Моя Рутина\n\nПо расписанию присылаю тебе в ЛС свежую подборку из сети по твоей теме — новости, события, курсы, статьи. Пишешь запрос своими словами, бот сам ищет источники и публикует с ссылками.\n\nПример:\n\n📰 новости про ИИ\n\n• OpenAI выпустила GPT-5.2 с контекстом до 5M токенов. [Источник]\n• Anthropic анонсировала Opus 5 на 2026 Q3. [Источник]\n• Google DeepMind показал Gemini 3 Ultra. [Источник]\n\n⚙️ Моя Рутина · раз в день в 09:00 МСК\n\nДанные собираются на момент каждого выпуска — всегда свежие.",
+          buttons: [
+            { label: "🔁 Создать Мою Рутину", action: "onboard-user-routine-start" },
             { label: "🕵️ Расскажи про анонимные сообщения", action: "onboard-user-show-anon" },
           ],
         });
+        break;
+
+      case "onboard-user-routine-start":
+        beginRoutinePrompt("__me__");
         break;
 
       case "onboard-user-show-anon": {
@@ -385,12 +841,17 @@ function PrivateChat() {
           : "выключен";
         const visibilityStatus = ignoringMe ? "игнорируются" : "учитываются";
         const anonChatsCount = chats.filter((c) => c.anonymous?.active).length;
+        const personalRoutines = routinesByChat["__me__"] ?? [];
+        const routineStatus = personalRoutines.length === 0
+          ? "не создано"
+          : `${personalRoutines.length} ${personalRoutines.length === 1 ? "рутина" : personalRoutines.length < 5 ? "рутины" : "рутин"}`;
 
         pushBot({
-          text: `✨ Персональные навыки\n\nЭто навыки, которые работают лично для вас прямо внутри бота — не привязаны к конкретному чату.\n\n🚀 Super-Summary: ${summaryStatus}\n🎙 Super Podcast: ${podcastStatus}\n🎭 Анонимные сообщения: доступно в ${anonChatsCount} чатах\n🙈 Видимость: сообщения ${visibilityStatus}`,
+          text: `✨ Персональные навыки\n\nЭто навыки, которые работают лично для вас прямо внутри бота — не привязаны к конкретному чату.\n\n🚀 Super-Summary: ${summaryStatus}\n🎙 Super Podcast: ${podcastStatus}\n🔁 Мои Рутины: ${routineStatus}\n🎭 Анонимные сообщения: доступно в ${anonChatsCount} чатах\n🙈 Видимость: сообщения ${visibilityStatus}`,
           buttons: [
             { label: "🚀 Super-Summary", action: "summary-info" },
             { label: "🎙 Super Podcast", action: "podcast-info" },
+            { label: "🔁 Мои Рутины", action: "personal-routine-info" },
             { label: "🎭 Анонимное сообщение", action: "anon-start" },
             {
               label: ignoringMe ? "🔄 Учитывать мои сообщения" : "🚫 Игнорировать мои сообщения",
@@ -398,6 +859,31 @@ function PrivateChat() {
             },
           ],
         });
+        break;
+      }
+
+      // ── Моя Рутина info ──
+      case "personal-routine-info": {
+        const personalRoutines = routinesByChat["__me__"] ?? [];
+        if (personalRoutines.length === 0) {
+          pushBot({
+            text: "🔁 Моя Рутина\n\nПо расписанию присылаю в ЛС свежую подборку из сети по твоей теме — новости, события, курсы, статьи. Пишешь запрос своими словами, бот сам ищет источники и публикует с ссылками.\n\nДанные собираются на момент каждого выпуска — всегда свежие.",
+            buttons: [
+              { label: "🔁 Создать Мою Рутину", action: "onboard-user-routine-start" },
+            ],
+          });
+        } else {
+          const list = personalRoutines
+            .map((r) => `• ${r.name} — ${r.active ? "активна" : "на паузе"} · ${everyLabel(r.intervalDays ?? 1, r.schedule.time)}`)
+            .join("\n");
+          pushBot({
+            text: `🔁 Мои Рутины (${personalRoutines.length})\n\n${list}\n\nУправлять и редактировать — в Mini App.`,
+            buttons: [
+              { label: "🔁 Создать ещё одну", action: "onboard-user-routine-start" },
+              { label: "⚙️ Открыть Mini App", action: "open-app" },
+            ],
+          });
+        }
         break;
       }
 
@@ -542,6 +1028,11 @@ function PrivateChat() {
         break;
       }
 
+      // ── Создание рутины ──
+      case "routine-start":
+        startRoutineWizard();
+        break;
+
       // ── Создание навыка ──
       case "create-skill-start":
         setSkillStep("compose");
@@ -660,12 +1151,29 @@ function PrivateChat() {
         if (action.startsWith("onboard-admin-show-askBot:")) {
           const cid = action.split(":")[1];
           pushBot({
-            text: `💬 Поиск в сети\n\nУчастники упоминают **@ChatLogixBot** в чате с вопросом — бот спрашивает inline-кнопками, где искать: в сети или в базе знаний чата (если включена).\n\nРаботает как универсальный эксперт: свежие данные из интернета, ответы на технические вопросы, разбор сообщений через reply. Бесплатно, лимиты антиспама: 1/мин, 15/ч, 50/день на пользователя.\n\nАвто-включается при первом mention в чате — можно отключить в настройках.`,
+            text: `💬 Поиск в сети\n\nУчастники упоминают **@ChatLogixBot** в чате с вопросом — и бот находит ответ в интернете: свежие новости, факты, разбор по теме. Отвечает со ссылками на источники.\n\nМожно спросить и про сообщение в чате — просто ответь на него с упоминанием бота.`,
             buttons: [
               { label: "💬 Включить поиск в сети", action: `onboard-admin-askBot:${cid}` },
+              { label: "🔁 Расскажи про рутины чата", action: `onboard-admin-show-routine:${cid}` },
+            ],
+          });
+          break;
+        }
+        if (action.startsWith("onboard-admin-show-routine:")) {
+          const cid = action.split(":")[1];
+          pushBot({
+            text: `🔁 Рутина чата\n\nУстали каждый день руками искать и кидать в чат свежие новости, релизы и курсы? Рутина чата делает это за вас.\n\nБот сам собирает инфу с открытых источников в сети — и публикует её в чат по расписанию.`,
+            buttons: [
+              { label: "🔁 Создать первую рутину", action: `onboard-admin-routine:${cid}` },
               { label: "🎭 Расскажи про анонимные сообщения", action: `onboard-admin-show-anon:${cid}` },
             ],
           });
+          break;
+        }
+        if (action.startsWith("onboard-admin-routine:")) {
+          const cid = action.split(":")[1];
+          toggleFeature(cid, "routine");
+          startRoutineWizard(cid);
           break;
         }
         if (action.startsWith("onboard-admin-show-anon:")) {
@@ -740,7 +1248,7 @@ function PrivateChat() {
             text: `💬 Поиск в сети включён в «${target?.name}»!\n\nТеперь любой участник может упомянуть @ChatLogixBot в чате с вопросом — бот ответит и подскажет, где искать (в сети или в базе знаний чата, если включена).\n\nБесплатно. Антиспам: 1 запрос в минуту, 15 в час, 50 в день на пользователя. Отключить можно в настройках.`,
             buttons: [
               { label: "⚙️ Настроить поиск в сети", action: "onboard-admin-settings" },
-              { label: "🎭 Расскажи про анонимные сообщения", action: `onboard-admin-show-anon:${cid}` },
+              { label: "🔁 Расскажи про рутины чата", action: `onboard-admin-show-routine:${cid}` },
             ],
           });
           break;
@@ -757,6 +1265,54 @@ function PrivateChat() {
           });
           break;
         }
+        if (action.startsWith("routine-settings:")) {
+          const cid = action.split(":")[1];
+          setTimeout(
+            () => navigate({ to: "/chat/$chatId/feature/$featureKey", params: { chatId: cid, featureKey: "routine" } }),
+            200,
+          );
+          break;
+        }
+
+        if (action.startsWith("routine-freq:")) {
+          const days = parseInt(action.split(":")[1], 10) || 1;
+          setRoutineDraft((d) => ({ ...d, intervalDays: days }));
+          setRoutineStep("time");
+          pushBot({
+            text: `⏰ Когда публиковать? Напиши время и часовой пояс (например 09:00 МСК или 18:30 GMT+3).\n\n⚠️ Данные собираются в сети на момент выпуска — каждый раз свежие.`,
+          });
+          break;
+        }
+
+        if (action === "routine-save") {
+          if (routineDraft.chatId) {
+            saveRoutine(routineDraft.chatId);
+          } else {
+            setChatPickerMode("routine");
+            setShowChatPicker(true);
+          }
+          break;
+        }
+
+        if (action.startsWith("routine-send:")) {
+          sendRoutineToChat(action.split(":")[1]);
+          break;
+        }
+
+        if (action === "routine-discard") {
+          setRoutineDraft({});
+          setRoutineStep("idle");
+          pushBot({ text: "🗑 Рутина удалена. Создать новую можно в любой момент." });
+          break;
+        }
+
+        if (action === "routine-edit-prompt") {
+          setRoutineDraft((d) => ({ ...d, edits: (d.edits ?? 0) + 1, digest: undefined }));
+          setRoutineStep("prompt");
+          pushBot({ text: "✏️ Ок, напиши новый запрос — что присылать в чат." });
+          break;
+        }
+
         if (action.startsWith("anon-pick:")) {
           const id = action.split(":")[1];
           setAnonChatId(id);
@@ -800,6 +1356,39 @@ function PrivateChat() {
       pushBot({
         text: "✅ Спасибо, идея у команды!\n\nЕсли что-то будет непонятно — напишем уточнить. Как только реализуем — придёт уведомление сюда же.",
       });
+      return;
+    }
+    if (routineStep === "prompt") {
+      const prompt = text.slice(0, 500);
+      setRoutineDraft((d) => ({ ...d, prompt }));
+      // Editing an existing draft (interval already chosen) → straight to preview
+      if (routineDraft.intervalDays) {
+        previewRoutine(prompt);
+        return;
+      }
+      setRoutineStep("idle");
+      pushBot({
+        text: `✏️ Запрос принят:\n«${prompt}»\n\nКак часто публиковать?`,
+        buttons: [
+          { label: "🔁 Раз в день", action: "routine-freq:1" },
+          { label: "🔁 Раз в 3 дня", action: "routine-freq:3" },
+          { label: "🔁 Раз в неделю", action: "routine-freq:7" },
+        ],
+      });
+      return;
+    }
+    if (routineStep === "time") {
+      const m = text.match(/^(\d{1,2})(?::(\d{2}))?\s*(.*)$/);
+      if (!m) {
+        pushBot({ text: "Нужно время в формате ЧЧ:ММ и пояс — например 09:00 МСК." });
+        return;
+      }
+      const hh = Math.min(23, parseInt(m[1], 10));
+      const mm = m[2] ? Math.min(59, parseInt(m[2], 10)) : 0;
+      const time = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+      const tz = m[3]?.trim() || "МСК";
+      setRoutineDraft((d) => ({ ...d, time, tz }));
+      previewRoutine();
       return;
     }
     pushBot({
@@ -904,7 +1493,11 @@ function PrivateChat() {
                   ? `🎭 Анонимно в «${chats.find((c) => c.id === anonChatId)?.name}»…`
                   : skillStep === "compose"
                     ? "🪄 Опиши идею навыка своими словами…"
-                    : "Сообщение"
+                    : routineStep === "prompt"
+                      ? "✏️ Что присылать в чат…"
+                      : routineStep === "time"
+                        ? "⏰ Время, напр. 09:00…"
+                        : "Сообщение"
               }
               className="flex-1 bg-transparent outline-none text-[14px]"
             />
@@ -927,6 +1520,11 @@ function PrivateChat() {
           chats={chats}
           onPick={handleChatPicked}
           onClose={() => setShowChatPicker(false)}
+          title={
+            chatPickerMode === "routine-pick"
+              ? "Выбери чат для рутины"
+              : "Добавить бота в чат"
+          }
         />
       )}
     </>
@@ -1318,10 +1916,12 @@ function ChatPickerModal({
   chats,
   onPick,
   onClose,
+  title = "Добавить бота в чат",
 }: {
   chats: Chat[];
   onPick: (chatId: string) => void;
   onClose: () => void;
+  title?: string;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -1331,7 +1931,7 @@ function ChatPickerModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-3 flex items-center justify-between border-b border-white/8">
-          <span className="text-[15px] font-semibold">Добавить бота в чат</span>
+          <span className="text-[15px] font-semibold">{title}</span>
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center text-foreground/60 hover:text-foreground transition"
