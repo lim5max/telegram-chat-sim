@@ -1268,6 +1268,9 @@ function isRedirect(obj) {
 function isResolvedRedirect(obj) {
   return isRedirect(obj) && !!obj.options.href;
 }
+function parseRedirect(obj) {
+  if (obj !== null && typeof obj === "object" && obj.isSerializedRedirect) return redirect(obj);
+}
 function composeRewrites(rewrites) {
   return {
     input: ({ url }) => {
@@ -4270,15 +4273,16 @@ function getScrollRestorationScriptForRouter(router) {
   });
 }
 export {
-  createRawStreamRPCPlugin as A,
+  defineHandlerCallback as A,
   BaseRootRoute as B,
-  isResolvedRedirect as C,
-  mergeHeaders as D,
-  executeRewriteInput as E,
-  defaultSerovalPlugins as F,
-  makeSerovalPlugin as G,
-  redirect as H,
-  notFound as I,
+  createSerializationAdapter as C,
+  createRawStreamRPCPlugin as D,
+  isResolvedRedirect as E,
+  executeRewriteInput as F,
+  defaultSerovalPlugins as G,
+  makeSerovalPlugin as H,
+  redirect as I,
+  notFound as J,
   RouterCore as R,
   isDangerousProtocol as a,
   BaseRoute as b,
@@ -4301,9 +4305,9 @@ export {
   resolveManifestAssetLink as s,
   transformReadableStreamWithRouter as t,
   transformPipeableStreamWithRouter as u,
-  getNormalizedURL as v,
-  getOrigin as w,
-  attachRouterServerSsrUtils as x,
-  defineHandlerCallback as y,
-  createSerializationAdapter as z
+  parseRedirect as v,
+  mergeHeaders as w,
+  getNormalizedURL as x,
+  getOrigin as y,
+  attachRouterServerSsrUtils as z
 };
