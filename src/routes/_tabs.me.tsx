@@ -92,11 +92,13 @@ function ForMeScreen() {
               value={superSummaryStyle}
               onChange={(id) => {
                 setSuperSummaryStyle(id);
-                toast(id === "uncensored"
-                  ? "Стиль: без цензуры (18+)"
-                  : "Стиль обновлён");
+                toast.success("Стиль обновлён", {
+                  description: id === "custom" ? "Свой промпт активирован" : undefined,
+                });
               }}
               context="super"
+              isPro
+              onUpgrade={() => navigate({ to: "/" })}
             />
 
             <button

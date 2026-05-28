@@ -15,11 +15,19 @@ import {
   AppWindow,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useChatsStore, type GroupMsg } from "@/store/chats";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sparkles } from "lucide-react";
-import type { Chat, Routine } from "@/data/chats";
+import type { Chat, Routine, FeatureKey } from "@/data/chats";
 import { fetchRoutineDigest } from "@/lib/routineFetch";
+import {
+  buildStyledSummaryText,
+  buildStyledSummaryButtons,
+  consumeCustomStyleAttempt,
+  customStyleRemaining,
+} from "@/lib/summaryStyleToast";
+import { CUSTOM_STYLE_DAILY_LIMIT } from "@/data/summaryStyles";
 
 const searchSchema = z.object({
   anon: z.string().optional(),
@@ -271,6 +279,7 @@ function PrivateChat() {
   const [showChatPicker, setShowChatPicker] = useState(false);
   const [chatPickerMode, setChatPickerMode] = useState<"addbot" | "routine" | "routine-pick">("addbot");
   const [onboardChatId, setOnboardChatId] = useState<string | null>(null);
+  const [customPromptEditChatId, setCustomPromptEditChatId] = useState<string | null>(null);
 
   // Routine wizard
   const [routineStep, setRoutineStep] = useState<"idle" | "prompt" | "time">("idle");
@@ -1113,6 +1122,44 @@ function PrivateChat() {
         break;
 
       default:
+        if (action.startsWith("summary-preview:")) {
+          const parts = action.split(":");
+          const cid = parts[1];
+          const styleId = parts[2] as Parameters<typeof buildStyledSummaryText>[0];
+          pushBot({
+            text: buildStyledSummaryText(styleId, "chat"),
+            buttons: buildStyledSummaryButtons(cid, styleId),
+          });
+          break;
+        }
+        if (action.startsWith("summary-save:")) {
+          const parts = action.split(":");
+          const styleId = parts[2];
+          toast.success("Стиль саммари сохранён", {
+            description: styleId
+              ? `Применён стиль «${styleId}». Будет использоваться в ежедневных саммари.`
+              : undefined,
+          });
+          break;
+        }
+        if (action.startsWith("summary-edit:")) {
+          const parts = action.split(":");
+          const cid = parts[1];
+          const styleId = parts[2];
+          if (styleId === "custom") {
+            setCustomPromptEditChatId(cid);
+            const remaining = customStyleRemaining();
+            pushBot({
+              text: `✏️ Введите новый промпт одной строкой.\n\nОсталось ${remaining}/${CUSTOM_STYLE_DAILY_LIMIT} попыток на сегодня.`,
+            });
+          } else {
+            setTimeout(
+              () => navigate({ to: "/chat/$chatId/feature/$featureKey", params: { chatId: cid, featureKey: "summary" } }),
+              200,
+            );
+          }
+          break;
+        }
         // ── Show (preview) handlers ──
         if (action.startsWith("onboard-admin-show-antispam:")) {
           const cid = action.split(":")[1];
@@ -1349,6 +1396,22 @@ function PrivateChat() {
     const text = input.trim();
     setInput("");
     pushUser(text);
+    if (customPromptEditChatId) {
+      const cid = customPromptEditChatId;
+      setCustomPromptEditChatId(null);
+      const res = consumeCustomStyleAttempt(text);
+      if (!res.ok) {
+        pushBot({
+          text: `Лимит исчерпан — ${CUSTOM_STYLE_DAILY_LIMIT}/${CUSTOM_STYLE_DAILY_LIMIT} на сегодня. Завтра обнулится.`,
+        });
+        return;
+      }
+      pushBot({
+        text: buildStyledSummaryText("custom", "chat"),
+        buttons: buildStyledSummaryButtons(cid, "custom"),
+      });
+      return;
+    }
     if (anonStep === "compose" && anonChatId) {
       setPendingText(text);
       setAnonStep("confirm");
@@ -1593,12 +1656,25 @@ function GroupChat() {
     return () => clearInterval(t);
   }, [activeChatId, pushMessage]);
 
+  const contributeToCollection = useChatsStore((s) => s.contributeToCollection);
   const handleAction = (action: string) => {
     if (action.startsWith("kb-open")) {
       navigate({ to: "/chat/$chatId", params: { chatId: activeChatId }, hash: "f-kb" });
     }
     if (action === "open-bot-dm" || action === "open-bot-personal") {
       setTabMode("private");
+    }
+    if (action.startsWith("collect:")) {
+      const feature = action.slice("collect:".length) as FeatureKey;
+      contributeToCollection(activeChatId, feature);
+      toast.success("Взнос зачтён");
+    }
+    if (action.startsWith("collect-info:")) {
+      const feature = action.slice("collect-info:".length) as FeatureKey;
+      navigate({
+        to: "/chat/$chatId/feature/$featureKey",
+        params: { chatId: activeChatId, featureKey: feature },
+      });
     }
   };
 

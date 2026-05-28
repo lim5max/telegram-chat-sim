@@ -6,6 +6,9 @@ import { useChatsStore } from "@/store/chats";
 import { type FeatureKey, type Chat } from "@/data/chats";
 import { DEFAULT_SUMMARY_STYLE } from "@/data/summaryStyles";
 import { SummaryStylePicker } from "@/components/SummaryStylePicker";
+import { showPreviewInChatToast } from "@/lib/summaryStyleToast";
+import { SUMMARY_STYLES } from "@/data/summaryStyles";
+import { PayOrCollectBanner, CollectionStatusCard } from "@/components/PayOrCollectBanner";
 import { AlertTriangle } from "lucide-react";
 
 export function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -79,14 +82,29 @@ export function FeatureSettings({ fk, chat }: { fk: FeatureKey; chat: Chat }) {
                 </div>
               </div>
             )}
-            {vPlan !== "Ultra" && (
-              <button
-                onClick={() => toast.success("Ссылка на оплату создана")}
-                className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
-              >
-                {vPlan === "Pro" ? "Перейти на Ultra · $49.99/мес" : "Перейти на Pro · $16.99/мес"}
-              </button>
-            )}
+            {vPlan !== "Ultra" && (() => {
+              const upgradeTo = vPlan === "Pro" ? "Ultra" : "Pro";
+              const upgradePrice = vPlan === "Pro" ? 49.99 : 16.99;
+              const ctx = {
+                chatId: chat.id,
+                feature: "voice" as FeatureKey,
+                planLabel: `Voice ${upgradeTo} · $${upgradePrice}/мес`,
+                totalAmount: upgradePrice,
+                memberCount: chat.members,
+              };
+              return (
+                <>
+                  <button
+                    onClick={() => toast.success("Ссылка на оплату создана")}
+                    className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
+                  >
+                    Перейти на {upgradeTo} · ${upgradePrice}/мес
+                  </button>
+                  <CollectionStatusCard chatId={chat.id} feature="voice" ctx={ctx} />
+                  <PayOrCollectBanner variant="compact" collection={ctx} />
+                </>
+              );
+            })()}
           </div>
         </>
       );
@@ -112,14 +130,27 @@ export function FeatureSettings({ fk, chat }: { fk: FeatureKey; chat: Chat }) {
                 {cp?.status?.includes("Активна") ? "$2.99/мес · безлимит" : "Бесплатно · 16 минут"} · аудио-версия саммари каждое утро
               </div>
             </div>
-            {!cp?.status?.includes("Активна") && (
-              <button
-                onClick={() => toast.success("Ссылка на оплату создана")}
-                className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
-              >
-                Перейти на Pro · $2.99/мес
-              </button>
-            )}
+            {!cp?.status?.includes("Активна") && (() => {
+              const ctx = {
+                chatId: chat.id,
+                feature: "podcast" as FeatureKey,
+                planLabel: "Chat Podcast Pro · $2.99/мес",
+                totalAmount: 2.99,
+                memberCount: chat.members,
+              };
+              return (
+                <>
+                  <button
+                    onClick={() => toast.success("Ссылка на оплату создана")}
+                    className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
+                  >
+                    Перейти на Pro · $2.99/мес
+                  </button>
+                  <CollectionStatusCard chatId={chat.id} feature="podcast" ctx={ctx} />
+                  <PayOrCollectBanner variant="compact" collection={ctx} />
+                </>
+              );
+            })()}
           </div>
 
           <div className="glass-card rounded-[20px] p-4 space-y-3">
@@ -284,10 +315,28 @@ export function FeatureSettings({ fk, chat }: { fk: FeatureKey; chat: Chat }) {
 const TIME_PRESETS = ["08:00", "12:00", "16:00", "18:00", "20:00"];
 
 function SummarySettings({ chat }: { chat: Chat }) {
+  const navigate = useNavigate();
   const summaryStyle = useChatsStore(
     (s) => s.summaryStyleByChat[chat.id] ?? DEFAULT_SUMMARY_STYLE,
   );
   const setSummaryStyle = useChatsStore((s) => s.setSummaryStyle);
+  const setTabMode = useChatsStore((s) => s.setTabMode);
+  const setPendingBroadcast = useChatsStore((s) => s.setPendingBroadcast);
+
+  const pushPreviewToChat = (id: typeof summaryStyle) => {
+    setTabMode("private");
+    setPendingBroadcast(`summary-preview:${chat.id}:${id}`);
+    navigate({ to: "/" });
+  };
+
+  const offerPreview = (id: typeof summaryStyle) => {
+    const styleObj = SUMMARY_STYLES.find((s) => s.id === id);
+    showPreviewInChatToast({
+      styleId: id,
+      styleLabel: styleObj?.label ?? id,
+      onShow: () => pushPreviewToChat(id),
+    });
+  };
   const [frequency, setFrequency] = useState<1 | 7 | 30>(1);
   const [weekDay, setWeekDay] = useState(0);
   const [monthDay, setMonthDay] = useState(1);
@@ -299,6 +348,7 @@ function SummarySettings({ chat }: { chat: Chat }) {
   const [showLinks, setShowLinks] = useState(true);
   const [spamFilter, setSpamFilter] = useState(true);
   const [hideSupport, setHideSupport] = useState(false);
+  const [extended, setExtended] = useState(false);
   const [hashtag, setHashtag] = useState(chat.hashtag ?? "dailysummary");
   const [title, setTitle] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -422,9 +472,15 @@ function SummarySettings({ chat }: { chat: Chat }) {
           onChange={(id) => {
             setSummaryStyle(chat.id, id);
             markDirty();
-            toast(`Стиль изменён: ${id === "uncensored" ? "без цензуры" : id}`);
+            offerPreview(id);
           }}
           context="chat"
+          isPro={chat.plan !== "Nano"}
+          onUpgrade={() => navigate({ to: "/" })}
+          onApplyCustom={() => {
+            markDirty();
+            offerPreview("custom");
+          }}
         />
       </div>
 
@@ -473,6 +529,20 @@ function SummarySettings({ chat }: { chat: Chat }) {
         </Setting>
         <Setting label="Скрыть текст поддержки">
           <Toggle defaultOn={hideSupport} onChange={(v) => { setHideSupport(v); markDirty(); }} />
+        </Setting>
+        <Setting label="Расширенный вариант">
+          <Toggle
+            defaultOn={extended}
+            onChange={(v) => {
+              setExtended(v);
+              markDirty();
+              toast(v ? "Расширенный вариант включён" : "Расширенный вариант отключён", {
+                description: v
+                  ? "Длиннее, с цитатами участников и ссылками на ключевые сообщения."
+                  : undefined,
+              });
+            }}
+          />
         </Setting>
       </div>
 
@@ -561,18 +631,33 @@ function SummaryPlanBlock({ chat }: { chat: Chat }) {
           </div>
         )}
 
-        {chat.plan !== "Contributor" && (
-          <button
-            onClick={() => toast.success("Ссылка на оплату создана")}
-            className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
-          >
-            {chat.plan === "Nano"
-              ? "Перейти на Standard · $2.49/мес"
+        {chat.plan !== "Contributor" && (() => {
+          const upgrade =
+            chat.plan === "Nano"
+              ? { name: "Standard", price: 2.49 }
               : chat.plan === "Standard"
-                ? "Перейти на Full-on · $4.99/мес"
-                : "Перейти на Contributor · $99.9/мес"}
-          </button>
-        )}
+                ? { name: "Full-on", price: 4.99 }
+                : { name: "Contributor", price: 99.9 };
+          const ctx = {
+            chatId: chat.id,
+            feature: "summary" as FeatureKey,
+            planLabel: `Summary ${upgrade.name} · $${upgrade.price}/мес`,
+            totalAmount: upgrade.price,
+            memberCount: chat.members,
+          };
+          return (
+            <>
+              <button
+                onClick={() => toast.success("Ссылка на оплату создана")}
+                className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
+              >
+                Перейти на {upgrade.name} · ${upgrade.price}/мес
+              </button>
+              <CollectionStatusCard chatId={chat.id} feature="summary" ctx={ctx} />
+              <PayOrCollectBanner variant="compact" collection={ctx} />
+            </>
+          );
+        })()}
       </div>
 
       <button
@@ -649,14 +734,27 @@ function AntispamSettings({ chat }: { chat: Chat }) {
             <div className="text-[10px] text-muted-foreground mt-0.5">токсичность</div>
           </div>
         </div>
-        {!isPro && (
-          <button
-            onClick={() => toast.success("Ссылка на оплату создана")}
-            className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
-          >
-            Подключить Antispam Pro · $2.49/мес
-          </button>
-        )}
+        {!isPro && (() => {
+          const ctx = {
+            chatId: chat.id,
+            feature: "antispam" as FeatureKey,
+            planLabel: "Antispam Pro · $2.49/мес",
+            totalAmount: 2.49,
+            memberCount: chat.members,
+          };
+          return (
+            <>
+              <button
+                onClick={() => toast.success("Ссылка на оплату создана")}
+                className="w-full py-2.5 text-[13px] font-semibold rounded-xl gradient-primary text-white"
+              >
+                Подключить Antispam Pro · $2.49/мес
+              </button>
+              <CollectionStatusCard chatId={chat.id} feature="antispam" ctx={ctx} />
+              <PayOrCollectBanner variant="compact" collection={ctx} />
+            </>
+          );
+        })()}
       </div>
 
       <div className="glass-card rounded-[20px] p-4 space-y-3">
