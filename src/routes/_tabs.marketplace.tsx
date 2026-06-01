@@ -6,6 +6,7 @@ import { FEATURE_META, type FeatureKey, type Monetization } from "@/data/chats";
 import { useChatsStore } from "@/store/chats";
 import { ChatAvatar } from "@/components/ChatAvatar";
 import { FeatureIcon, ICON_GRADIENTS } from "@/components/FeatureIcon";
+import { PayOrCollectBanner } from "@/components/PayOrCollectBanner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   CheckListIcon,
@@ -441,6 +442,11 @@ function FeatureDetailView({
             {status === "active" ? "Открыть" : "Включить"}
           </button>
         </div>
+        {status !== "active" && f.monetization !== "free" && f.audience !== "user" && (
+          <div className="mt-3">
+            <PayOrCollectBanner variant="full" />
+          </div>
+        )}
       </div>
 
       {/* Tariff comparison */}

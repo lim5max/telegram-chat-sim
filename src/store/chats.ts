@@ -18,7 +18,24 @@ export type GroupMsg = {
   deleted?: boolean;
   anonymous?: boolean;
   buttons?: { label: string; action: string }[];
+  collectionId?: string;
 };
+
+export type Collection = {
+  id: string;
+  chatId: string;
+  feature: FeatureKey;
+  planLabel: string;
+  totalAmount: number;
+  perPerson: number;
+  targetCount: number;
+  deadline: string;
+  startedAt: string;
+  contributors: { name: string; at: string }[];
+  status: "active" | "completed" | "cancelled";
+};
+
+export const collectionKey = (chatId: string, feature: FeatureKey) => `${chatId}:${feature}`;
 
 let seq = 5000;
 const nextId = () => ++seq;
@@ -77,6 +94,7 @@ type State = {
   superSummaryStyle: SummaryStyleId;
   routinesByChat: Record<string, Routine[]>;
   pendingBroadcast: string | null;
+  collections: Record<string, Collection>;
 
   setTabMode: (mode: "private" | "group") => void;
   setPendingBroadcast: (action: string | null) => void;
@@ -96,6 +114,16 @@ type State = {
   addRoutine: (chatId: string, routine: Routine) => void;
   updateRoutine: (chatId: string, routineId: string, patch: Partial<Routine>) => void;
   deleteRoutine: (chatId: string, routineId: string) => void;
+  startCollection: (input: {
+    chatId: string;
+    feature: FeatureKey;
+    planLabel: string;
+    totalAmount: number;
+    targetCount: number;
+    deadline: string;
+  }) => Collection;
+  contributeToCollection: (chatId: string, feature: FeatureKey, name?: string) => void;
+  cancelCollection: (chatId: string, feature: FeatureKey) => void;
 };
 
 export const useChatsStore = create<State>((set) => ({
@@ -114,6 +142,7 @@ export const useChatsStore = create<State>((set) => ({
   superSummaryStyle: DEFAULT_SUMMARY_STYLE,
   routinesByChat: { ...SEED_ROUTINES },
   pendingBroadcast: null,
+  collections: {},
 
   setTabMode: (mode) => set({ tabMode: mode }),
   setPendingBroadcast: (action) => set({ pendingBroadcast: action }),
@@ -315,6 +344,104 @@ export const useChatsStore = create<State>((set) => ({
         [chatId]: (state.routinesByChat[chatId] ?? []).filter((r) => r.id !== routineId),
       },
     })),
+
+  startCollection: ({ chatId, feature, planLabel, totalAmount, targetCount, deadline }) => {
+    const key = collectionKey(chatId, feature);
+    const perPerson = Math.ceil((totalAmount / targetCount) * 100) / 100;
+    const collection: Collection = {
+      id: `col-${nextId()}`,
+      chatId,
+      feature,
+      planLabel,
+      totalAmount,
+      perPerson,
+      targetCount,
+      deadline,
+      startedAt: now(),
+      contributors: [],
+      status: "active",
+    };
+    set((state) => ({
+      collections: { ...state.collections, [key]: collection },
+      messagesByChat: {
+        ...state.messagesByChat,
+        [chatId]: [
+          ...(state.messagesByChat[chatId] ?? []),
+          {
+            id: nextId(),
+            from: "bot",
+            time: now(),
+            text: `💰 Сбор на ${planLabel}\n\nЦель: $${totalAmount.toFixed(2)} · до ${deadline}\nПо $${perPerson.toFixed(2)} с участника (нужно ${targetCount})\n\nНажми «Внести», чтобы участвовать.`,
+            buttons: [
+              { label: `Внести $${perPerson.toFixed(2)}`, action: `collect:${feature}` },
+              { label: "Подробнее", action: `collect-info:${feature}` },
+            ],
+            collectionId: collection.id,
+          },
+        ],
+      },
+    }));
+    return collection;
+  },
+
+  contributeToCollection: (chatId, feature, name = "Вы") =>
+    set((state) => {
+      const key = collectionKey(chatId, feature);
+      const col = state.collections[key];
+      if (!col || col.status !== "active") return state;
+      const already = col.contributors.some((c) => c.name === name);
+      if (already) return state;
+      const contributors = [...col.contributors, { name, at: now() }];
+      const reached = contributors.length >= col.targetCount;
+      const updated: Collection = {
+        ...col,
+        contributors,
+        status: reached ? "completed" : "active",
+      };
+      const extraMsg: GroupMsg | null = reached
+        ? {
+            id: nextId(),
+            from: "bot",
+            time: now(),
+            text: `✅ Сбор на ${col.planLabel} закрыт. Тариф подключён.`,
+            collectionId: col.id,
+          }
+        : null;
+      const baseMsgs = state.messagesByChat[chatId] ?? [];
+      return {
+        collections: { ...state.collections, [key]: updated },
+        messagesByChat: {
+          ...state.messagesByChat,
+          [chatId]: extraMsg ? [...baseMsgs, extraMsg] : baseMsgs,
+        },
+      };
+    }),
+
+  cancelCollection: (chatId, feature) =>
+    set((state) => {
+      const key = collectionKey(chatId, feature);
+      const col = state.collections[key];
+      if (!col) return state;
+      return {
+        collections: {
+          ...state.collections,
+          [key]: { ...col, status: "cancelled" },
+        },
+        messagesByChat: {
+          ...state.messagesByChat,
+          [chatId]: [
+            ...(state.messagesByChat[chatId] ?? []),
+            {
+              id: nextId(),
+              from: "bot",
+              time: now(),
+              text: `❌ Сбор на ${col.planLabel} отменён администратором.`,
+              collectionId: col.id,
+            },
+          ],
+        },
+      };
+    }),
 }));
 
 export const useChat = (id: string) =>
