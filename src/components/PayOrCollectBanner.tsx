@@ -5,11 +5,17 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   HandCoinsIcon,
   UserMultipleIcon,
-  CalendarSetting01Icon,
   CheckmarkCircle02Icon,
   Cancel01Icon,
   RocketIcon,
 } from "@hugeicons/core-free-icons";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerClose,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
 import { useChatsStore, collectionKey, type Collection } from "@/store/chats";
 import { type FeatureKey } from "@/data/chats";
 
@@ -19,9 +25,23 @@ type CollectionContext = {
   chatId: string;
   feature: FeatureKey;
   planLabel: string;
-  totalAmount: number;
+  totalAmount: number; // цена тарифа в $ (конвертируем в ₽ ниже)
   memberCount: number;
 };
+
+/* ------------------------------------------------------------------ */
+/*  Деньги: цель в $, взносы — фиксированные пресеты в ₽               */
+/* ------------------------------------------------------------------ */
+
+const RUB_RATE = 78; // $1 ≈ 78₽ (см. PRICES_RUB.md)
+const CONTRIBUTION_PRESETS = [100, 200, 500, 1000] as const;
+
+const toRub = (usd: number) => Math.round(usd * RUB_RATE);
+const fmtRub = (rub: number) => `${rub.toLocaleString("ru-RU")} ₽`;
+
+// Дефолтный пресет: чем крупнее цель, тем крупнее взнос (чтобы не звать сотни людей).
+const defaultPresetFor = (goalRub: number) =>
+  CONTRIBUTION_PRESETS.find((p) => goalRub / p <= 25) ?? CONTRIBUTION_PRESETS[0];
 
 export function PayOrCollectBanner({
   variant = "full",
@@ -39,8 +59,8 @@ export function PayOrCollectBanner({
     }
   };
 
-  const sheet = open && collection ? (
-    <CollectionSheet ctx={collection} onClose={() => setOpen(false)} />
+  const sheet = collection ? (
+    <CollectionSheet ctx={collection} open={open} onOpenChange={setOpen} />
   ) : null;
 
   if (variant === "compact") {
@@ -60,7 +80,7 @@ export function PayOrCollectBanner({
           <div className="flex-1 min-w-0">
             <div className="text-[12px] font-semibold leading-tight">Скинуться чатом</div>
             <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
-              Запустить сбор — каждый участник доплатит свою часть
+              Запустить сбор — каждый внесёт фиксированную сумму
             </div>
           </div>
           <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -111,17 +131,24 @@ export function PayOrCollectBanner({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Bottom sheet                                                       */
+/*  Общий bottom sheet (vaul Drawer)                                   */
 /* ------------------------------------------------------------------ */
 
-function CollectionSheet({ ctx, onClose }: { ctx: CollectionContext; onClose: () => void }) {
+function CollectionSheet({
+  ctx,
+  open,
+  onOpenChange,
+}: {
+  ctx: CollectionContext;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const startCollection = useChatsStore((s) => s.startCollection);
   const existing = useChatsStore((s) => s.collections[collectionKey(ctx.chatId, ctx.feature)]);
   const active = existing && existing.status === "active";
 
-  const suggestedTarget = Math.min(Math.max(8, Math.ceil(ctx.totalAmount / 1.5)), ctx.memberCount);
-  const [target, setTarget] = useState(suggestedTarget);
-  const perPerson = Math.ceil((ctx.totalAmount / target) * 100) / 100;
+  const goalRub = toRub(ctx.totalAmount);
+  const [perPerson, setPerPerson] = useState(() => defaultPresetFor(goalRub));
   const [deadline, setDeadline] = useState("через 3 дня");
 
   const onStart = () => {
@@ -129,117 +156,114 @@ function CollectionSheet({ ctx, onClose }: { ctx: CollectionContext; onClose: ()
       chatId: ctx.chatId,
       feature: ctx.feature,
       planLabel: ctx.planLabel,
-      totalAmount: ctx.totalAmount,
-      targetCount: target,
+      totalAmount: goalRub,
+      perPerson,
       deadline,
     });
     toast.success("Сбор запущен. Бот написал в чат.");
-    onClose();
+    onOpenChange(false);
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-3"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-[460px] glass-card rounded-[24px] p-5 max-h-[85vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start gap-3 mb-4">
-          <div
-            className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ background: "linear-gradient(135deg, oklch(0.72 0.16 155 / 0.4), oklch(0.72 0.16 200 / 0.3))" }}
-          >
-            <HugeiconsIcon icon={HandCoinsIcon} size={22} strokeWidth={2} color="oklch(0.92 0.12 155)" />
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-h-[90vh] border-white/10 text-foreground">
+        <div className="overflow-y-auto px-5 pb-7 pt-1">
+          <div className="flex items-start gap-3 mb-4">
+            <div
+              className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(135deg, oklch(0.72 0.16 155 / 0.4), oklch(0.72 0.16 200 / 0.3))" }}
+            >
+              <HugeiconsIcon icon={HandCoinsIcon} size={22} strokeWidth={2} color="oklch(0.92 0.12 155)" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <DrawerTitle className="text-[16px] font-bold leading-tight">Скинуться чатом</DrawerTitle>
+              <DrawerDescription className="text-[12px] text-muted-foreground mt-0.5">
+                {ctx.planLabel}
+              </DrawerDescription>
+            </div>
+            <DrawerClose className="text-muted-foreground hover:text-white">
+              <HugeiconsIcon icon={Cancel01Icon} size={20} strokeWidth={2} />
+            </DrawerClose>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[16px] font-bold leading-tight">Скинуться чатом</div>
-            <div className="text-[12px] text-muted-foreground mt-0.5">{ctx.planLabel}</div>
-          </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-white">
-            <HugeiconsIcon icon={Cancel01Icon} size={20} strokeWidth={2} />
-          </button>
-        </div>
 
-        {active ? (
-          <ActiveCollectionView col={existing!} onClose={onClose} />
-        ) : (
-          <>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
-              Как работает
-            </div>
-            <div className="space-y-2 mb-4">
-              <Step n={1} text="Бот публикует пост в чате с суммой и кнопкой «Внести»." />
-              <Step n={2} text="Участники нажимают и платят свою долю — каждый видит прогресс." />
-              <Step n={3} text="Когда собрано — бот включает тариф и пишет «Готово»." />
-            </div>
+          {active ? (
+            <ActiveCollectionView col={existing!} onClose={() => onOpenChange(false)} />
+          ) : (
+            <>
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+                Как работает
+              </div>
+              <div className="space-y-2 mb-4">
+                <Step n={1} text="Бот публикует пост в чате с суммой и кнопкой «Внести»." />
+                <Step n={2} text="Участники нажимают и платят фиксированный взнос — каждый видит прогресс." />
+                <Step n={3} text="Когда собрано — бот включает тариф и пишет «Готово»." />
+              </div>
 
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
-              Параметры
-            </div>
-            <div className="glass-card rounded-2xl p-3 space-y-3 mb-4">
-              <Row label="Цель" value={`$${ctx.totalAmount.toFixed(2)}`} />
-              <Row
-                label="Участников"
-                value={
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setTarget(Math.max(2, target - 1))}
-                      className="w-6 h-6 rounded-md bg-white/10 hover:bg-white/15 flex items-center justify-center text-sm"
-                    >
-                      −
-                    </button>
-                    <span className="text-[13px] font-semibold w-8 text-center">{target}</span>
-                    <button
-                      onClick={() => setTarget(Math.min(ctx.memberCount, target + 1))}
-                      className="w-6 h-6 rounded-md bg-white/10 hover:bg-white/15 flex items-center justify-center text-sm"
-                    >
-                      +
-                    </button>
-                  </div>
-                }
-              />
-              <Row label="С каждого" value={<span className="font-semibold">${perPerson.toFixed(2)}</span>} />
-              <Row
-                label="Срок"
-                value={
-                  <div className="flex gap-1">
-                    {(["через 1 день", "через 3 дня", "через 7 дней"] as const).map((d) => (
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+                Параметры
+              </div>
+              <div className="glass-card rounded-2xl p-3 space-y-3 mb-4">
+                <Row label="Цель" value={<span className="font-semibold">{fmtRub(goalRub)}</span>} />
+
+                <div>
+                  <div className="text-[12px] text-muted-foreground mb-2">Взнос с каждого</div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {CONTRIBUTION_PRESETS.map((p) => (
                       <button
-                        key={d}
-                        onClick={() => setDeadline(d)}
-                        className={`px-2 py-1 rounded-md text-[11px] font-medium ${
-                          deadline === d ? "gradient-primary text-white" : "bg-white/10 text-muted-foreground"
+                        key={p}
+                        onClick={() => setPerPerson(p)}
+                        className={`py-2 rounded-xl text-[13px] font-semibold transition ${
+                          perPerson === p
+                            ? "gradient-primary text-white"
+                            : "bg-white/10 text-muted-foreground hover:bg-white/15"
                         }`}
                       >
-                        {d.replace("через ", "")}
+                        {p} ₽
                       </button>
                     ))}
                   </div>
-                }
-              />
-            </div>
+                </div>
 
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
-              Где следить
-            </div>
-            <div className="text-[12px] text-muted-foreground leading-relaxed mb-4">
-              Прогресс будет тут — в настройках навыка появится карточка со счётчиком взносов.
-              Бот в чате пингует за день до дедлайна и закрывает сбор при достижении цели.
-            </div>
+                <Row
+                  label="Срок"
+                  value={
+                    <div className="flex gap-1">
+                      {(["через 1 день", "через 3 дня", "через 7 дней"] as const).map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => setDeadline(d)}
+                          className={`px-2 py-1 rounded-md text-[11px] font-medium ${
+                            deadline === d ? "gradient-primary text-white" : "bg-white/10 text-muted-foreground"
+                          }`}
+                        >
+                          {d.replace("через ", "")}
+                        </button>
+                      ))}
+                    </div>
+                  }
+                />
+              </div>
 
-            <button
-              onClick={onStart}
-              className="w-full py-3 rounded-2xl gradient-primary text-white text-[14px] font-semibold inline-flex items-center justify-center gap-2"
-            >
-              <HugeiconsIcon icon={RocketIcon} size={18} strokeWidth={2} color="white" />
-              Запустить сбор
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+                Где следить
+              </div>
+              <div className="text-[12px] text-muted-foreground leading-relaxed mb-4">
+                Прогресс будет тут — в настройках навыка появится карточка со счётчиком взносов.
+                Бот в чате пингует за день до дедлайна и закрывает сбор при достижении цели.
+              </div>
+
+              <button
+                onClick={onStart}
+                className="w-full py-3 rounded-2xl gradient-primary text-white text-[14px] font-semibold inline-flex items-center justify-center gap-2"
+              >
+                <HugeiconsIcon icon={RocketIcon} size={18} strokeWidth={2} color="white" />
+                Запустить сбор по {fmtRub(perPerson)}
+              </button>
+            </>
+          )}
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
@@ -270,7 +294,8 @@ function ActiveCollectionView({ col, onClose }: { col: Collection; onClose: () =
   const navigate = useNavigate();
   const cancel = useChatsStore((s) => s.cancelCollection);
   const contribute = useChatsStore((s) => s.contributeToCollection);
-  const pct = Math.min((col.contributors.length / col.targetCount) * 100, 100);
+  const collected = col.contributors.length * col.perPerson;
+  const pct = Math.min((collected / col.totalAmount) * 100, 100);
   const youContributed = col.contributors.some((c) => c.name === "Вы");
 
   return (
@@ -279,7 +304,7 @@ function ActiveCollectionView({ col, onClose }: { col: Collection; onClose: () =
         <div className="flex items-center justify-between text-[11px] mb-1.5">
           <span className="text-muted-foreground">Собрано</span>
           <span className="font-semibold">
-            {col.contributors.length} из {col.targetCount} участников
+            {fmtRub(collected)} из {fmtRub(col.totalAmount)}
           </span>
         </div>
         <div className="h-2 w-full bg-white/8 rounded-full overflow-hidden">
@@ -292,10 +317,11 @@ function ActiveCollectionView({ col, onClose }: { col: Collection; onClose: () =
           />
         </div>
         <div className="flex items-center justify-between mt-3 text-[12px]">
-          <span className="text-muted-foreground">
-            ${(col.contributors.length * col.perPerson).toFixed(2)} / ${col.totalAmount.toFixed(2)}
+          <span className="text-muted-foreground inline-flex items-center gap-1">
+            <HugeiconsIcon icon={UserMultipleIcon} size={12} strokeWidth={2} />
+            {col.contributors.length} внесли
           </span>
-          <span className="text-muted-foreground">до {col.deadline}</span>
+          <span className="text-muted-foreground">{col.deadline}</span>
         </div>
       </div>
 
@@ -321,11 +347,11 @@ function ActiveCollectionView({ col, onClose }: { col: Collection; onClose: () =
           <button
             onClick={() => {
               contribute(col.chatId, col.feature);
-              toast.success(`Внесено $${col.perPerson.toFixed(2)}`);
+              toast.success(`Внесено ${fmtRub(col.perPerson)}`);
             }}
             className="flex-1 py-3 rounded-2xl gradient-primary text-white text-[13px] font-semibold"
           >
-            Внести ${col.perPerson.toFixed(2)}
+            Внести {fmtRub(col.perPerson)}
           </button>
         )}
         <button
@@ -369,7 +395,8 @@ export function CollectionStatusCard({
   const col = useChatsStore((s) => s.collections[collectionKey(chatId, feature)]);
   const [open, setOpen] = useState(false);
   if (!col || col.status !== "active") return null;
-  const pct = Math.min((col.contributors.length / col.targetCount) * 100, 100);
+  const collected = col.contributors.length * col.perPerson;
+  const pct = Math.min((collected / col.totalAmount) * 100, 100);
 
   return (
     <>
@@ -390,7 +417,7 @@ export function CollectionStatusCard({
           <div className="flex-1 min-w-0">
             <div className="text-[12px] font-semibold leading-tight">Идёт сбор на {col.planLabel}</div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
-              По ${col.perPerson.toFixed(2)} · до {col.deadline}
+              По {fmtRub(col.perPerson)} · {col.deadline}
             </div>
           </div>
         </div>
@@ -398,10 +425,10 @@ export function CollectionStatusCard({
           <div className="flex items-center justify-between text-[11px] mb-1">
             <span className="text-muted-foreground inline-flex items-center gap-1">
               <HugeiconsIcon icon={UserMultipleIcon} size={11} strokeWidth={2} />
-              {col.contributors.length} из {col.targetCount}
+              {col.contributors.length} внесли
             </span>
             <span className="font-semibold">
-              ${(col.contributors.length * col.perPerson).toFixed(2)} / ${col.totalAmount.toFixed(2)}
+              {fmtRub(collected)} / {fmtRub(col.totalAmount)}
             </span>
           </div>
           <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
@@ -421,7 +448,7 @@ export function CollectionStatusCard({
           Открыть сбор
         </button>
       </div>
-      {open && <CollectionSheet ctx={ctx} onClose={() => setOpen(false)} />}
+      <CollectionSheet ctx={ctx} open={open} onOpenChange={setOpen} />
     </>
   );
 }

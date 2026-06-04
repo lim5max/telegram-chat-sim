@@ -118,8 +118,8 @@ type State = {
     chatId: string;
     feature: FeatureKey;
     planLabel: string;
-    totalAmount: number;
-    targetCount: number;
+    totalAmount: number; // цель в ₽
+    perPerson: number; // фиксированный взнос в ₽ (пресет)
     deadline: string;
   }) => Collection;
   contributeToCollection: (chatId: string, feature: FeatureKey, name?: string) => void;
@@ -345,9 +345,11 @@ export const useChatsStore = create<State>((set) => ({
       },
     })),
 
-  startCollection: ({ chatId, feature, planLabel, totalAmount, targetCount, deadline }) => {
+  startCollection: ({ chatId, feature, planLabel, totalAmount, perPerson, deadline }) => {
     const key = collectionKey(chatId, feature);
-    const perPerson = Math.ceil((totalAmount / targetCount) * 100) / 100;
+    // Сколько взносов нужно, чтобы покрыть цель (последний может перекрыть с запасом).
+    const targetCount = Math.max(1, Math.ceil(totalAmount / perPerson));
+    const fmt = (n: number) => `${n.toLocaleString("ru-RU")} ₽`;
     const collection: Collection = {
       id: `col-${nextId()}`,
       chatId,
@@ -371,9 +373,9 @@ export const useChatsStore = create<State>((set) => ({
             id: nextId(),
             from: "bot",
             time: now(),
-            text: `💰 Сбор на ${planLabel}\n\nЦель: $${totalAmount.toFixed(2)} · до ${deadline}\nПо $${perPerson.toFixed(2)} с участника (нужно ${targetCount})\n\nНажми «Внести», чтобы участвовать.`,
+            text: `💰 Сбор на ${planLabel}\n\nЦель: ${fmt(totalAmount)} · ${deadline}\nВзнос — ${fmt(perPerson)} с участника\n\nНажми «Внести», чтобы участвовать.`,
             buttons: [
-              { label: `Внести $${perPerson.toFixed(2)}`, action: `collect:${feature}` },
+              { label: `Внести ${fmt(perPerson)}`, action: `collect:${feature}` },
               { label: "Подробнее", action: `collect-info:${feature}` },
             ],
             collectionId: collection.id,

@@ -458,10 +458,10 @@ function requireReact() {
   return react.exports;
 }
 var reactExports = requireReact();
-const React = /* @__PURE__ */ getDefaultExportFromCjs(reactExports);
-const React$1 = /* @__PURE__ */ _mergeNamespaces({
+const React__default = /* @__PURE__ */ getDefaultExportFromCjs(reactExports);
+const React = /* @__PURE__ */ _mergeNamespaces({
   __proto__: null,
-  default: React
+  default: React__default
 }, [reactExports]);
 var jsxRuntime = { exports: {} };
 var reactJsxRuntime_production = {};
@@ -504,9 +504,9 @@ function requireJsxRuntime() {
 }
 var jsxRuntimeExports = requireJsxRuntime();
 export {
-  React as R,
+  React__default as R,
   requireReact as a,
-  React$1 as b,
+  React as b,
   getDefaultExportFromCjs as g,
   jsxRuntimeExports as j,
   reactExports as r
