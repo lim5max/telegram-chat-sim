@@ -29,6 +29,7 @@ function HomeScreen() {
   const chats = useChatsStore((s) => s.chats);
   const superSummaryOn = useChatsStore((s) => s.superSummaryOn);
   const superPodcastOn = useChatsStore((s) => s.superPodcastOn);
+  const summaryChannels = useChatsStore((s) => s.summaryChannels);
 
   const superPodcastFreeMinutesUsed = useChatsStore((s) => s.superPodcastFreeMinutesUsed);
   const adminChats = chats.filter((c) => c.isAdmin);
@@ -98,7 +99,11 @@ function HomeScreen() {
           <PersonalRow
             icon={<HugeiconsIcon icon={SparklesIcon} size={16} strokeWidth={2} color="white" />}
             title="Super-Summary"
-            status={superSummaryOn ? "Включён · ежедневно в 09:00" : "Отключён"}
+            status={
+              superSummaryOn
+                ? `Включён · 09:00${summaryChannels.length > 0 ? ` · +${summaryChannels.length} ${summaryChannels.length === 1 ? "канал" : summaryChannels.length < 5 ? "канала" : "каналов"}` : ""}`
+                : "Отключён"
+            }
             on={superSummaryOn}
             gradient={ICON_GRADIENTS.summary}
           />

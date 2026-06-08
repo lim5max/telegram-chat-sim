@@ -7,6 +7,9 @@ import {
   SEED_ROUTINES,
 } from "@/data/chats";
 import { DEFAULT_SUMMARY_STYLE, type SummaryStyleId } from "@/data/summaryStyles";
+import type { ParsedChannel } from "@/lib/channelLink";
+
+export type SummaryChannel = ParsedChannel;
 
 export type GroupMsg = {
   id: number;
@@ -92,6 +95,7 @@ type State = {
   ignoreMeByChat: Record<string, boolean>;
   summaryStyleByChat: Record<string, SummaryStyleId>;
   superSummaryStyle: SummaryStyleId;
+  summaryChannels: SummaryChannel[];
   routinesByChat: Record<string, Routine[]>;
   pendingBroadcast: string | null;
   collections: Record<string, Collection>;
@@ -110,6 +114,8 @@ type State = {
   setSuperPodcast: (on: boolean) => void;
   setSummaryStyle: (chatId: string, style: SummaryStyleId) => void;
   setSuperSummaryStyle: (style: SummaryStyleId) => void;
+  addSummaryChannel: (channel: SummaryChannel) => void;
+  removeSummaryChannel: (id: string) => void;
   incUsage: (chatId: string, by?: number) => void;
   addRoutine: (chatId: string, routine: Routine) => void;
   updateRoutine: (chatId: string, routineId: string, patch: Partial<Routine>) => void;
@@ -140,6 +146,7 @@ export const useChatsStore = create<State>((set) => ({
   ignoreMeByChat: {},
   summaryStyleByChat: {},
   superSummaryStyle: DEFAULT_SUMMARY_STYLE,
+  summaryChannels: [],
   routinesByChat: { ...SEED_ROUTINES },
   pendingBroadcast: null,
   collections: {},
@@ -310,6 +317,17 @@ export const useChatsStore = create<State>((set) => ({
       summaryStyleByChat: { ...state.summaryStyleByChat, [chatId]: style },
     })),
   setSuperSummaryStyle: (style) => set({ superSummaryStyle: style }),
+
+  addSummaryChannel: (channel) =>
+    set((state) =>
+      state.summaryChannels.some((c) => c.id === channel.id)
+        ? state // уже добавлен — не дублируем
+        : { summaryChannels: [...state.summaryChannels, channel] },
+    ),
+  removeSummaryChannel: (id) =>
+    set((state) => ({
+      summaryChannels: state.summaryChannels.filter((c) => c.id !== id),
+    })),
 
   incUsage: (chatId, by = 1) =>
     set((state) => ({

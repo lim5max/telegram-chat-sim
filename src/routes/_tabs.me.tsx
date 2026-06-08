@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { Toggle } from "@/components/Toggle";
 import { useChatsStore } from "@/store/chats";
 import { superPodcast } from "@/data/chats";
-import { Play, ChevronRight, ChevronDown } from "lucide-react";
+import { parseChannelLink } from "@/lib/channelLink";
+import { Play, ChevronRight, ChevronDown, Plus, X } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { SparklesIcon, HeadphonesIcon, IncognitoIcon } from "@hugeicons/core-free-icons";
 import { ICON_GRADIENTS } from "@/components/FeatureIcon";
@@ -28,6 +29,10 @@ function ForMeScreen() {
   const setSuperSummary = useChatsStore((s) => s.setSuperSummary);
   const superSummaryStyle = useChatsStore((s) => s.superSummaryStyle);
   const setSuperSummaryStyle = useChatsStore((s) => s.setSuperSummaryStyle);
+  const summaryChannels = useChatsStore((s) => s.summaryChannels);
+  const addSummaryChannel = useChatsStore((s) => s.addSummaryChannel);
+  const removeSummaryChannel = useChatsStore((s) => s.removeSummaryChannel);
+  const [channelInput, setChannelInput] = useState("");
   const superPodcastOn = useChatsStore((s) => s.superPodcastOn);
   const setSuperPodcast = useChatsStore((s) => s.setSuperPodcast);
   const superPodcastSubscription = useChatsStore((s) => s.superPodcastSubscription);
@@ -41,6 +46,22 @@ function ForMeScreen() {
   const anonChats = chats.filter((c) => c.anonymous?.active);
 
   const toggle = (key: string) => setExpanded(expanded === key ? null : key);
+
+  const handleAddChannel = () => {
+    const res = parseChannelLink(channelInput);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    if (summaryChannels.some((c) => c.id === res.channel.id)) {
+      toast(`${res.channel.handle} уже добавлен`);
+      setChannelInput("");
+      return;
+    }
+    addSummaryChannel(res.channel);
+    setChannelInput("");
+    toast.success(`Канал ${res.channel.handle} добавлен в сводку`);
+  };
 
   return (
     <div className="px-4 pt-5 space-y-3 max-w-[520px] mx-auto">
@@ -67,7 +88,9 @@ function ForMeScreen() {
               {superSummaryOn && <OnBadge />}
             </div>
             <div className="text-[11px] text-muted-foreground truncate">
-              {superSummaryOn ? "Включён · ежедневно в 09:00" : "Отключён"}
+              {superSummaryOn
+                ? `Включён · 09:00${summaryChannels.length > 0 ? ` · +${summaryChannels.length} ${summaryChannels.length === 1 ? "канал" : summaryChannels.length < 5 ? "канала" : "каналов"}` : ""}`
+                : "Отключён"}
             </div>
           </div>
           <ChevronDown size={16} className={`text-muted-foreground transition-transform ${expanded === "summary" ? "rotate-180" : ""}`} />
@@ -100,6 +123,70 @@ function ForMeScreen() {
               isPro
               onUpgrade={() => navigate({ to: "/" })}
             />
+
+            {/* Открытые каналы в сводке */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Открытые каналы {summaryChannels.length > 0 && `(${summaryChannels.length})`}
+                </div>
+                <span className="text-[10px] text-muted-foreground">🔒 только открытые</span>
+              </div>
+              <div className="text-[12px] text-muted-foreground -mt-0.5">
+                Добавьте каналы — бот вынесет из них главное в утреннюю сводку вместе с чатами.
+              </div>
+
+              {summaryChannels.length > 0 && (
+                <div className="space-y-1.5">
+                  {summaryChannels.map((ch) => (
+                    <div
+                      key={ch.id}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/8"
+                    >
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
+                        style={{ background: ICON_GRADIENTS.summary }}
+                      >
+                        {ch.title.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-medium truncate">{ch.title}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">{ch.handle}</div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          removeSummaryChannel(ch.id);
+                          toast(`${ch.handle} убран из сводки`);
+                        }}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition shrink-0"
+                        aria-label={`Убрать ${ch.handle}`}
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <input
+                  value={channelInput}
+                  onChange={(e) => setChannelInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddChannel()}
+                  placeholder="https://t.me/durov или @durov"
+                  className="flex-1 bg-white/8 rounded-xl px-3 py-2.5 text-[13px] outline-none placeholder:text-muted-foreground/60"
+                />
+                <button
+                  onClick={handleAddChannel}
+                  disabled={!channelInput.trim()}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 disabled:opacity-40"
+                  style={{ background: "var(--gradient-primary)" }}
+                  aria-label="Добавить канал"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+            </div>
 
             <button
               onClick={() => navigate({ to: "/" })}

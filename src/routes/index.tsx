@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sparkles } from "lucide-react";
 import type { Chat, Routine, FeatureKey } from "@/data/chats";
 import { fetchRoutineDigest } from "@/lib/routineFetch";
+import { parseChannelLink } from "@/lib/channelLink";
 import {
   buildStyledSummaryText,
   buildStyledSummaryButtons,
@@ -310,12 +311,15 @@ function PrivateChat() {
   const setSuperPodcast = useChatsStore((s) => s.setSuperPodcast);
   const superPodcastSubscription = useChatsStore((s) => s.superPodcastSubscription);
   const superPodcastFreeMinutesUsed = useChatsStore((s) => s.superPodcastFreeMinutesUsed);
+  const summaryChannels = useChatsStore((s) => s.summaryChannels);
+  const addSummaryChannel = useChatsStore((s) => s.addSummaryChannel);
 
   const [msgs, setMsgs] = useState<Msg[]>(initialPrivate);
   const [typing, setTyping] = useState(false);
   const [input, setInput] = useState("");
   const [anonStep, setAnonStep] = useState<"idle" | "pick" | "compose" | "confirm">("idle");
   const [skillStep, setSkillStep] = useState<"idle" | "compose">("idle");
+  const [channelStep, setChannelStep] = useState<"idle" | "await-link">("idle");
   const [anonChatId, setAnonChatId] = useState<string | null>(null);
   const [pendingText, setPendingText] = useState("");
   const [ignoringMe, setIgnoringMe] = useState(false);
@@ -547,6 +551,29 @@ function PrivateChat() {
   const startRoutineWizard = (_chatId?: string) => {
     setChatPickerMode("routine-pick");
     setShowChatPicker(true);
+  };
+
+  /** Просит пользователя прислать ссылку на открытый канал. */
+  const beginChannelPrompt = () => {
+    setChannelStep("await-link");
+    const hasChannels = summaryChannels.length > 0;
+    pushBot({
+      text: hasChannels
+        ? `📡 Каналы в Super-Summary (${summaryChannels.length})\n\n${summaryChannels.map((c) => `• ${c.handle}`).join("\n")}\n\nПришли ссылку на ещё один открытый канал — например https://t.me/durov или @durov. Каждое утро буду выносить из него главное в твою сводку.`
+        : `📡 Каналы в Super-Summary\n\nКроме чатов, можно добавить открытые Telegram-каналы. Прочитаю их за тебя и вынесу главное в ту же сводку.\n\nПришли ссылку на открытый канал — например https://t.me/durov или @durov.\n\n🔒 Только открытые каналы. Закрытые по инвайту добавить нельзя.`,
+    });
+  };
+
+  /** Блок «каналы» для вставки в текст Super-Summary (пусто, если каналов нет). */
+  const channelsSummaryBlock = () => {
+    if (summaryChannels.length === 0) return "";
+    const lines = summaryChannels
+      .map((c) => {
+        const n = Math.floor(Math.random() * 8 + 2);
+        return `📡 **${c.title}** (${c.handle})\n— ${n} новых постов, вынес главное в одну строку`;
+      })
+      .join("\n");
+    return `\n\n📡 **Твои каналы**\n${lines}`;
   };
 
   const pushBot = (m: Omit<Msg, "id" | "from" | "time">) => {
@@ -856,7 +883,7 @@ function PrivateChat() {
 
         resetTour("user");
         pushBot({
-          text: `Покажу, как не читать все чаты и быть в курсе.\n\nSuper-Summary — одна сводка по всем твоим чатам, каждое утро в личку:\n\n🚀 **Твоя сводка за сегодня:**\n\n🏢 **Рабочий чат**\n— Дедлайн по проекту перенесли на пятницу (47 сообщ.)\n— Новый дизайн главной одобрили (23 сообщ.)\n🔗 [Figma-макет], [Таск в Jira]\n\n🏠 **ЖК Новый Город**\n— Отключение воды 30.04 с 10:00 до 18:00 (31 сообщ.)\n— Собрание жильцов в субботу (12 сообщ.)\n🔗 [Объявление УК]\n\n💪 **Здоровое питание**\n— Интервальное голодание 16/8 — опыт участников (28 сообщ.)\n— Подборка рецептов на неделю (15 сообщ.)\n🔗 [Калькулятор КБЖУ]\n\nВместо десятков чатов — одно сообщение с главным. Хочешь получать такой каждый день?`,
+          text: `Покажу, как не читать все чаты и быть в курсе.\n\nКаждое утро буду присылать тебе одну сводку по всем чатам и каналам, прямо в личку:\n\n🚀 **Твоя сводка за сегодня:**\n\n🏢 **Рабочий чат**\n— Дедлайн по проекту перенесли на пятницу (47 сообщ.)\n— Новый дизайн главной одобрили (23 сообщ.)\n🔗 [Figma-макет], [Таск в Jira]\n\n🏠 **ЖК Новый Город**\n— Отключение воды 30.04 с 10:00 до 18:00 (31 сообщ.)\n— Собрание жильцов в субботу (12 сообщ.)\n🔗 [Объявление УК]\n\n📡 **Твои каналы**\n— [Нутрициолог Оля]: 5 ошибок в «правильном» завтраке — разбор (8 постов)\n— [Андрей про ЗОЖ]: как не сорваться на выходных, чек-лист (6 постов)\n\nЧаты — где есть ты и я. Каналы добавляются по ссылке: прочитаю их за тебя и вынесу главное в ту же сводку.\n\nВместо десятков чатов и каналов — одно сообщение с главным. Хочешь получать такой каждый день?`,
           buttons: [
             { label: "✨ Включить Super-Summary", action: "onboard-user-enable" },
             ...tellButtons(USER_TOUR, "user", null),
@@ -868,8 +895,9 @@ function PrivateChat() {
       case "onboard-user-enable":
         setSuperSummary(true);
         pushBot({
-          text: "Готово 👌 Super-Summary будет приходить каждый день в 09:00.\n\nЧаты, где вчера было тихо, в отчёт не попадают — только то, где что-то обсуждали.\n\nКстати, эту сводку можно ещё и слушать — Super Podcast озвучивает её каждое утро.",
+          text: "Готово 👌 Буду присылать тебе Super-Summary каждый день в 09:00.\n\nЧаты, где вчера было тихо, в отчёт не включаю — только то, где что-то обсуждали.\n\n📡 А ещё можно добавить открытые Telegram-каналы — прочитаю их за тебя и вынесу главное в ту же сводку.",
           buttons: [
+            { label: "📡 Добавить каналы в сводку", action: "add-channels" },
             { label: "⚙️ Настроить Super-Summary", action: "open-app" },
             ...tellButtons(USER_TOUR, "user", null),
           ],
@@ -929,7 +957,11 @@ function PrivateChat() {
 
       // ── Персональные навыки ──
       case "user-settings": {
-        const summaryStatus = superSummaryOn ? "включён" : "выключен";
+        const summaryStatus = superSummaryOn
+          ? summaryChannels.length > 0
+            ? `включён · +${summaryChannels.length} ${summaryChannels.length === 1 ? "канал" : summaryChannels.length < 5 ? "канала" : "каналов"}`
+            : "включён"
+          : "выключен";
         const podcastStatus = superPodcastOn
           ? superPodcastSubscription
             ? `подписка до ${superPodcastSubscription.expiresAt}`
@@ -987,16 +1019,20 @@ function PrivateChat() {
       case "summary-info": {
         if (!superSummaryOn) {
           pushBot({
-            text: "🚀 Super-Summary\n\nКогда чатов много, легко что-то пропустить. Super-Summary собирает саммари из всех чатов, где есть ты и ChatLogix в одно сообщение каждое утро\n\nВместо отдельных саммари внутри каждого чата, вы получаете одно сообщение с итогами по всем группам.\n\nЕсли какой-то чат не попал в ваше Super-Summary, бот не знает, что вы в нем — проявитесь, написав в нем любое сообщение, и на следующий день саммари из этого чата будет включено в Super-Summary\n\nВключи, чтобы получать такую сводку каждое утро.",
+            text: "🚀 Super-Summary\n\nКогда чатов и каналов много, легко что-то пропустить. Каждое утро присылаю тебе одну сводку: по всем чатам, где есть ты и я, плюс по открытым каналам, которые ты добавишь.\n\nВместо отдельных саммари внутри каждого чата и пролистывания лент каналов — одно сообщение с главным.\n\nЕсли какого-то чата нет в сводке, значит я не вижу, что ты в нём — напиши там любое сообщение, и со следующего дня добавлю его в Super-Summary.\n\nВключи — и буду присылать такую сводку каждое утро.",
             buttons: [
               { label: "✅ Включить Super-Summary", action: "enable-super-summary" },
             ],
           });
         } else {
+          const channelLine = summaryChannels.length > 0
+            ? `\n\n📡 Каналов в сводке: ${summaryChannels.length}\n${summaryChannels.map((c) => `• ${c.handle}`).join("\n")}`
+            : "\n\n📡 Каналы пока не добавлены — добавь открытые каналы, и я буду выносить из них главное в ту же сводку.";
           pushBot({
-            text: "🚀 Super-Summary работает\n\nСводка приходит каждое утро. Последний раз присылал сегодня",
+            text: `🚀 Super-Summary работает\n\nПрисылаю тебе сводку каждое утро. Последний раз — сегодня.${channelLine}`,
             buttons: [
               { label: "📋 Показать последний Super-Summary", action: "show-last-summary" },
+              { label: summaryChannels.length > 0 ? "📡 Управлять каналами" : "📡 Добавить каналы", action: "add-channels" },
               { label: "🔕 Отключить Super-Summary", action: "disable-super-summary" },
             ],
           });
@@ -1004,12 +1040,36 @@ function PrivateChat() {
         break;
       }
 
+      // ── Готово с каналами ──
+      case "channels-done":
+        setChannelStep("idle");
+        pushBot({
+          text: `📡 Готово. В Super-Summary сейчас ${summaryChannels.length} ${summaryChannels.length === 1 ? "канал" : summaryChannels.length < 5 ? "канала" : "каналов"}. Стиль и время сводки можно настроить в Mini App.`,
+          buttons: [
+            { label: "⚙️ Настроить Super-Summary", action: "open-app" },
+            ...tellButtons(USER_TOUR, "user", null),
+          ],
+        });
+        break;
+
+      // ── Добавить каналы в Super-Summary ──
+      case "add-channels":
+        beginChannelPrompt();
+        if (summaryChannels.length > 0) {
+          pushBot({
+            text: "Убрать канал из сводки можно в настройках Mini App.",
+            buttons: [{ label: "⚙️ Открыть настройки", action: "open-app" }],
+          });
+        }
+        break;
+
       // ── Enable Super-Summary ──
       case "enable-super-summary":
         setSuperSummary(true);
         pushBot({
-          text: "🚀 Super-Summary включен!\n\nЗавтра утром скину первую сводку. Чаты, где вчера было тихо, в отчет не попадают — только то, где что-то обсуждали",
+          text: "🚀 Super-Summary включён!\n\nЗавтра утром скину первую сводку. Чаты, где вчера было тихо, в отчёт не включаю — только то, где что-то обсуждали.\n\n📡 Хочешь следить ещё и за открытыми каналами? Добавь их — и я вынесу из них главное в ту же сводку.",
           buttons: [
+            { label: "📡 Добавить каналы в сводку", action: "add-channels" },
             { label: "🔕 Отключить Super-Summary", action: "disable-super-summary" },
           ],
         });
@@ -1019,7 +1079,7 @@ function PrivateChat() {
       case "disable-super-summary":
         setSuperSummary(false);
         pushBot({
-          text: "🔕 Super-Summary отключен\n\nЕжедневные сводки больше приходить не будут. Если ты передумаешь, можно включить заново",
+          text: "🔕 Super-Summary отключён\n\nБольше не буду присылать тебе ежедневные сводки. Если передумаешь — включи заново.",
           buttons: [
             { label: "✅ Включить Super-Summary", action: "enable-super-summary" },
           ],
@@ -1044,7 +1104,10 @@ function PrivateChat() {
           summaryText = "Нет активных чатов для саммари";
         }
         pushBot({
-          text: `Твой super-summary за последние 24 часа:\n\n${summaryText}`,
+          text: `Вот твой super-summary за последние 24 часа:\n\n${summaryText}${channelsSummaryBlock()}`,
+          buttons: summaryChannels.length === 0
+            ? [{ label: "📡 Добавить каналы в сводку", action: "add-channels" }]
+            : undefined,
         });
         break;
       }
@@ -1490,6 +1553,31 @@ function PrivateChat() {
       });
       return;
     }
+    if (channelStep === "await-link") {
+      const res = parseChannelLink(text);
+      if (!res.ok) {
+        pushBot({ text: `⚠️ ${res.error}` });
+        return; // остаёмся в режиме ожидания ссылки — пусть пришлёт другую
+      }
+      if (summaryChannels.some((c) => c.id === res.channel.id)) {
+        pushBot({
+          text: `📡 ${res.channel.handle} уже в твоей сводке. Пришли ссылку на другой канал — или нажми «Готово».`,
+          buttons: [{ label: "✅ Готово", action: "channels-done" }],
+        });
+        return;
+      }
+      addSummaryChannel(res.channel);
+      setChannelStep("idle");
+      pushBot({
+        text: `✅ Канал ${res.channel.handle} добавлен в Super-Summary.\n\nЗавтра утром вынесу из него главное прямо в твою сводку, вместе с чатами. Можно добавить ещё или настроить стиль и время в Mini App.`,
+        buttons: [
+          { label: "📡 Добавить ещё канал", action: "add-channels" },
+          { label: "⚙️ Настроить Super-Summary", action: "open-app" },
+          ...tellButtons(USER_TOUR, "user", null),
+        ],
+      });
+      return;
+    }
     if (anonStep === "compose" && anonChatId) {
       setPendingText(text);
       setAnonStep("confirm");
@@ -1644,11 +1732,13 @@ function PrivateChat() {
                   ? `🎭 Анонимно в «${chats.find((c) => c.id === anonChatId)?.name}»…`
                   : skillStep === "compose"
                     ? "🪄 Опиши идею навыка своими словами…"
-                    : routineStep === "prompt"
-                      ? "✏️ Что присылать в чат…"
-                      : routineStep === "time"
-                        ? "⏰ Время, напр. 09:00…"
-                        : "Сообщение"
+                    : channelStep === "await-link"
+                      ? "📡 Ссылка на канал, напр. https://t.me/durov…"
+                      : routineStep === "prompt"
+                        ? "✏️ Что присылать в чат…"
+                        : routineStep === "time"
+                          ? "⏰ Время, напр. 09:00…"
+                          : "Сообщение"
               }
               className="flex-1 bg-transparent outline-none text-[14px]"
             />
