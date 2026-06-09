@@ -64,6 +64,14 @@ function styleById(id: SummaryStyleId) {
   return SUMMARY_STYLES.find((s) => s.id === id) ?? SUMMARY_STYLES[0];
 }
 
+// Рамка превью для контекста "chat" — тот же пример, что в онбординге
+// («Здоровое питание», 28.04.2026, 112 сообщений), чтобы стиль показывался
+// внутри настоящего саммари, а не голым списком.
+const CHAT_PREVIEW_INTRO =
+  "📋 Чат «Здоровое питание» · пример за вчера\n\n🗓 Что обсуждалось вчера 28.04.2026\nВсего было написано **112 сообщений**";
+const CHAT_PREVIEW_LINKS =
+  "Интересные ссылки:\n[Калькулятор КБЖУ онлайн]\n[Подборка рецептов на неделю]";
+
 export function buildStyledSummaryText(
   id: SummaryStyleId,
   context: SummaryContext,
@@ -71,24 +79,29 @@ export function buildStyledSummaryText(
   const style = styleById(id);
   const sample = style.samples[context];
 
+  let body: string;
   if (id === "custom") {
     const userPrompt = customStylePrompt();
-    const header = `${style.emoji} Саммари в вашем стиле`;
-    const lines = [header];
+    const lines = [`${style.emoji} Саммари в вашем стиле`];
     if (userPrompt) {
       lines.push(`Промпт: «${userPrompt}»`);
     }
     lines.push("");
     lines.push(...sample.bullets.map((b) => `• ${b}`));
-    return lines.join("\n");
+    body = lines.join("\n");
+  } else {
+    body = [
+      `${style.emoji} ${sample.header}`,
+      "",
+      ...sample.bullets.map((b) => `• ${b}`),
+    ].join("\n");
   }
 
-  const lines = [
-    `${style.emoji} ${sample.header}`,
-    "",
-    ...sample.bullets.map((b) => `• ${b}`),
-  ];
-  return lines.join("\n");
+  // Для custom рамку не добавляем — это инструкция «опишите стиль», а не готовое саммари.
+  if (context === "chat" && id !== "custom") {
+    return [CHAT_PREVIEW_INTRO, "", body, "", CHAT_PREVIEW_LINKS].join("\n");
+  }
+  return body;
 }
 
 export function buildStyledSummaryButtons(
@@ -97,6 +110,7 @@ export function buildStyledSummaryButtons(
 ): { label: string; action: string }[] {
   return [
     { label: "✅ Сохранить стиль", action: `summary-save:${chatId}:${styleId}` },
+    { label: "🎨 Посмотреть другие стили", action: `summary-style-pick:${chatId}` },
     {
       label: styleId === "custom" ? "✏️ Изменить промпт" : "✏️ Изменить в настройках",
       action: `summary-edit:${chatId}:${styleId}`,

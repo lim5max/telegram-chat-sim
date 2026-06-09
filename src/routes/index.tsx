@@ -28,7 +28,7 @@ import {
   consumeCustomStyleAttempt,
   customStyleRemaining,
 } from "@/lib/summaryStyleToast";
-import { CUSTOM_STYLE_DAILY_LIMIT } from "@/data/summaryStyles";
+import { CUSTOM_STYLE_DAILY_LIMIT, SUMMARY_STYLES } from "@/data/summaryStyles";
 
 const searchSchema = z.object({
   anon: z.string().optional(),
@@ -374,6 +374,7 @@ function PrivateChat() {
   };
 
   const toggleFeature = useChatsStore((s) => s.toggleFeature);
+  const setSummaryStyle = useChatsStore((s) => s.setSummaryStyle);
   const pushGroupMessage = useChatsStore((s) => s.pushMessage);
   const setActiveChat = useChatsStore((s) => s.setActiveChat);
   const setTabMode = useChatsStore((s) => s.setTabMode);
@@ -602,29 +603,9 @@ function PrivateChat() {
     const target = chats.find((c) => c.id === chatId);
     if (!target) return;
 
-    const topicEmojis = ["💬", "💡", "📊", "🗂", "📍"];
-    const topicCounts = target.topics.map(() => Math.floor(Math.random() * 40 + 8));
-    topicCounts.sort((a, b) => b - a);
-    const topicLines = target.topics
-      .map((t, i) => `${topicEmojis[i % topicEmojis.length]} ${t} (**${topicCounts[i]} сообщений**)`)
-      .join("\n");
-
-    const freeLimit = 200;
-    const processed = Math.min(target.used, freeLimit);
-    const limitNote = target.used > freeLimit
-      ? `Обработано **${processed} из ${target.used}** сообщений (бесплатный лимит — ${freeLimit}/день). Увеличить можно в настройках.`
-      : `Саммари обрабатывает бесплатно до **${freeLimit} сообщений/день**.`;
-
     pushGroupMessage(target.id, {
       from: "bot",
       text: `В любом активном чате одна и та же история: однотипные вопросы, флуд, тяжело читать все сообщения если пропустил пару дней в чате, потухающая активность через время.\n\nМеня зовут **ChatLogix**, я AI-ассистент этого чата. У меня есть навыки для чата чтобы:\n\n🎯 Держать участников чата в курсе происходящего сводками и подкастом\n🔎 Отвечать на вопросы исходя из истории чата\n🛡 Чистить чат от флуда, спама и наплыва ботов\n🎙️ Расшифровывать голосовые сообщения\n🎉 Поддерживать активность чата за счёт развлекательных навыков\n\nЕсли нужного навыка нет — расскажите свою идею в ЛС, мы посмотрим и попробуем сделать.\n\nА ещё у меня есть персональные навыки, которые работают в ЛС бота. И помогают настроить поток информации под себя.\n\n[✨ Узнать про личную пользу в боте](open-bot-personal)`,
-    });
-
-    pushBot({
-      text: `📨 Я отправил приветствие в «**${target.name}**» — посмотреть можно во вкладке «🔥 Группа» сверху.`,
-      buttons: [
-        { label: "👀 Открыть чат и посмотреть", action: `view-group-welcome:${target.id}` },
-      ],
     });
 
     pushBot({
@@ -634,8 +615,9 @@ function PrivateChat() {
     setTimeout(() => {
       resetTour(`group:${chatId}`);
       pushBot({
-        text: `Готово 👌 ChatLogix добавлен в «**${target.name}**»!\n\n🗓 Что обсуждалось вчера\nВсего было написано **${target.used} сообщений**\n\n${topicLines}\n\n${limitNote} Завтра тоже автоматически пришлю такое в чат.\n\nНастроить эмодзи, время и периодичность отправки можно в настройках.`,
+        text: `✅ Я в чате «**${target.name}**»!\n\n📊 Саммари включено в чате **${target.name}**.\n\nПервое саммари будет завтра утром. Сейчас у тебя тариф **Nano** — обрабатываю до 200 сообщений в день. Если чат шумный и этого мало — посмотри другие тарифы.\n\nТы можешь персонализировать саммари: время отправки, периодичность, эмодзи и т.д. — в настройках бота. А стиль саммари можно поменять прямо здесь, кнопкой ниже.`,
         buttons: [
+          { label: "🎨 Изменить стиль саммари", action: `summary-style-pick:${target.id}` },
           { label: "⚙️ Настроить саммари", action: "onboard-admin-settings" },
           ...tellButtons(GROUP_TOUR, `group:${chatId}`, null, `:${chatId}`),
         ],
@@ -1262,6 +1244,17 @@ function PrivateChat() {
         break;
 
       default:
+        if (action.startsWith("summary-style-pick:")) {
+          const cid = action.split(":")[1];
+          pushBot({
+            text: "🎨 Выбери стиль саммари — покажу пример за вчера прямо здесь, а потом сможешь сохранить.",
+            buttons: SUMMARY_STYLES.map((s) => ({
+              label: `${s.emoji} ${s.label}`,
+              action: `summary-preview:${cid}:${s.id}`,
+            })),
+          });
+          break;
+        }
         if (action.startsWith("summary-preview:")) {
           const parts = action.split(":");
           const cid = parts[1];
@@ -1274,11 +1267,20 @@ function PrivateChat() {
         }
         if (action.startsWith("summary-save:")) {
           const parts = action.split(":");
-          const styleId = parts[2];
+          const cid = parts[1];
+          const styleId = parts[2] as Parameters<typeof setSummaryStyle>[1];
+          const style = SUMMARY_STYLES.find((s) => s.id === styleId);
+          const styleLabel = style?.label ?? styleId;
+          if (cid && styleId) setSummaryStyle(cid, styleId);
           toast.success("Стиль саммари сохранён", {
-            description: styleId
-              ? `Применён стиль «${styleId}». Будет использоваться в ежедневных саммари.`
-              : undefined,
+            description: `Применён стиль «${styleLabel}». Буду присылать саммари так каждое утро.`,
+          });
+          pushBot({
+            text: `✅ Готово — стиль «**${styleLabel}**» сохранён. Каждое утро буду присылать саммари в этом стиле.\n\nВ настройках мини-аппа можно поменять не только стиль: периодичность и время отправки, эмодзи, автозакреп, фильтр спама и многое другое.\n\nЧто посмотрим дальше?`,
+            buttons: [
+              { label: "⚙️ Настроить саммари", action: "onboard-admin-settings" },
+              ...tellButtons(GROUP_TOUR, `group:${cid}`, null, `:${cid}`),
+            ],
           });
           break;
         }
