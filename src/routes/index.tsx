@@ -25,10 +25,8 @@ import { parseChannelLink } from "@/lib/channelLink";
 import {
   buildStyledSummaryText,
   buildStyledSummaryButtons,
-  consumeCustomStyleAttempt,
-  customStyleRemaining,
 } from "@/lib/summaryStyleToast";
-import { CUSTOM_STYLE_DAILY_LIMIT, SUMMARY_STYLES } from "@/data/summaryStyles";
+import { SUMMARY_STYLES } from "@/data/summaryStyles";
 
 const searchSchema = z.object({
   anon: z.string().optional(),
@@ -1246,6 +1244,7 @@ function PrivateChat() {
       default:
         if (action.startsWith("summary-style-pick:")) {
           const cid = action.split(":")[1];
+          setCustomPromptEditChatId(null);
           pushBot({
             text: "🎨 Выбери стиль саммари — покажу пример за вчера прямо здесь, а потом сможешь сохранить.",
             buttons: SUMMARY_STYLES.map((s) => ({
@@ -1259,6 +1258,9 @@ function PrivateChat() {
           const parts = action.split(":");
           const cid = parts[1];
           const styleId = parts[2] as Parameters<typeof buildStyledSummaryText>[0];
+          // Для custom сразу включаем ввод промпта — пользователь пишет следующим
+          // сообщением, без отдельной кнопки. Для остальных стилей режим выключаем.
+          setCustomPromptEditChatId(styleId === "custom" ? cid : null);
           pushBot({
             text: buildStyledSummaryText(styleId, "chat"),
             buttons: buildStyledSummaryButtons(cid, styleId),
@@ -1284,22 +1286,23 @@ function PrivateChat() {
           });
           break;
         }
+        if (action.startsWith("open-tariffs:")) {
+          const cid = action.split(":")[1];
+          setTimeout(() => {
+            if (cid) {
+              navigate({ to: "/chat/$chatId/feature/$featureKey", params: { chatId: cid, featureKey: "summary" } });
+            } else {
+              navigate({ to: "/subscriptions" });
+            }
+          }, 200);
+          break;
+        }
         if (action.startsWith("summary-edit:")) {
-          const parts = action.split(":");
-          const cid = parts[1];
-          const styleId = parts[2];
-          if (styleId === "custom") {
-            setCustomPromptEditChatId(cid);
-            const remaining = customStyleRemaining();
-            pushBot({
-              text: `✏️ Введите новый промпт одной строкой.\n\nОсталось ${remaining}/${CUSTOM_STYLE_DAILY_LIMIT} попыток на сегодня.`,
-            });
-          } else {
-            setTimeout(
-              () => navigate({ to: "/chat/$chatId/feature/$featureKey", params: { chatId: cid, featureKey: "summary" } }),
-              200,
-            );
-          }
+          const cid = action.split(":")[1];
+          setTimeout(
+            () => navigate({ to: "/chat/$chatId/feature/$featureKey", params: { chatId: cid, featureKey: "summary" } }),
+            200,
+          );
           break;
         }
         // ── Show (preview) handlers ──
@@ -1542,16 +1545,13 @@ function PrivateChat() {
     if (customPromptEditChatId) {
       const cid = customPromptEditChatId;
       setCustomPromptEditChatId(null);
-      const res = consumeCustomStyleAttempt(text);
-      if (!res.ok) {
-        pushBot({
-          text: `Лимит исчерпан — ${CUSTOM_STYLE_DAILY_LIMIT}/${CUSTOM_STYLE_DAILY_LIMIT} на сегодня. Завтра обнулится.`,
-        });
-        return;
-      }
       pushBot({
-        text: buildStyledSummaryText("custom", "chat"),
-        buttons: buildStyledSummaryButtons(cid, "custom"),
+        text: `✨ Остался ещё один шаг!\n\nСвой стиль доступен от тарифов **Standard** и выше. Я запомнил твой промпт: «${text}».\n\nУлучши тариф — и каждое утро буду присылать саммари твоего чата именно в этом тоне. Промпт сможешь менять когда захочешь.`,
+        buttons: [
+          { label: "⬆️ Улучшить тариф", action: `open-tariffs:${cid}` },
+          { label: "⚙️ Настроить саммари", action: "onboard-admin-settings" },
+          ...tellButtons(GROUP_TOUR, `group:${cid}`, null, `:${cid}`),
+        ],
       });
       return;
     }
@@ -1730,7 +1730,9 @@ function PrivateChat() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendInput()}
               placeholder={
-                anonStep === "compose" && anonChatId
+                customPromptEditChatId
+                  ? "✨ Опиши свой стиль одной строкой…"
+                  : anonStep === "compose" && anonChatId
                   ? `🎭 Анонимно в «${chats.find((c) => c.id === anonChatId)?.name}»…`
                   : skillStep === "compose"
                     ? "🪄 Опиши идею навыка своими словами…"

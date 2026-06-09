@@ -68,7 +68,7 @@ function styleById(id: SummaryStyleId) {
 // («Здоровое питание», 28.04.2026, 112 сообщений), чтобы стиль показывался
 // внутри настоящего саммари, а не голым списком.
 const CHAT_PREVIEW_INTRO =
-  "📋 Чат «Здоровое питание» · пример за вчера\n\n🗓 Что обсуждалось вчера 28.04.2026\nВсего было написано **112 сообщений**";
+  "Давай покажу, как этот стиль будет выглядеть на примере — вот один день из чата «Здоровое питание»:\n\n🗓 Что обсуждалось вчера 28.04.2026\nВсего было написано **112 сообщений**";
 const CHAT_PREVIEW_LINKS =
   "Интересные ссылки:\n[Калькулятор КБЖУ онлайн]\n[Подборка рецептов на неделю]";
 
@@ -81,14 +81,9 @@ export function buildStyledSummaryText(
 
   let body: string;
   if (id === "custom") {
-    const userPrompt = customStylePrompt();
-    const lines = [`${style.emoji} Саммари в вашем стиле`];
-    if (userPrompt) {
-      lines.push(`Промпт: «${userPrompt}»`);
-    }
-    lines.push("");
-    lines.push(...sample.bullets.map((b) => `• ${b}`));
-    body = lines.join("\n");
+    const header = `${style.emoji} Саммари в вашем стиле`;
+    // абзацами, без буллитов — это пояснение, а не список
+    body = `${header}\n\n${sample.bullets.join("\n\n")}`;
   } else {
     body = [
       `${style.emoji} ${sample.header}`,
@@ -108,13 +103,18 @@ export function buildStyledSummaryButtons(
   chatId: string,
   styleId: SummaryStyleId,
 ): { label: string; action: string }[] {
+  // Для custom превью — это инструкция «опиши стиль»: ввод промпта уже включён
+  // (см. summary-preview в index.tsx), пользователь просто пишет сообщением.
+  // Сохранение/тариф предлагаются уже после показа результата.
+  if (styleId === "custom") {
+    return [
+      { label: "🎨 Посмотреть другие стили", action: `summary-style-pick:${chatId}` },
+    ];
+  }
   return [
     { label: "✅ Сохранить стиль", action: `summary-save:${chatId}:${styleId}` },
     { label: "🎨 Посмотреть другие стили", action: `summary-style-pick:${chatId}` },
-    {
-      label: styleId === "custom" ? "✏️ Изменить промпт" : "✏️ Изменить в настройках",
-      action: `summary-edit:${chatId}:${styleId}`,
-    },
+    { label: "✏️ Изменить в настройках", action: `summary-edit:${chatId}:${styleId}` },
   ];
 }
 
