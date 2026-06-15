@@ -73,6 +73,12 @@ const seedMessages = (chatId: string): GroupMsg[] => {
         { id: nextId(), from: "member", author: "Артём", time: "14:20", text: "Закрыли pre-seed на $250k 🎉" },
         { id: nextId(), from: "member", author: "Marina", time: "14:22", text: "Поздравляю! Какая оценка?" },
       ];
+    case "design-team":
+      return [
+        { id: nextId(), from: "system", time: "", text: "сегодня" },
+        { id: nextId(), from: "member", author: "Аня", time: "11:30", text: "Брендбук v2 на финалке, кидаю в Figma 🎨" },
+        { id: nextId(), from: "member", author: "Дима", time: "11:34", text: "Лендинг к пятнице успеваем?" },
+      ];
     default:
       return [
         { id: nextId(), from: "system", time: "", text: "сегодня" },

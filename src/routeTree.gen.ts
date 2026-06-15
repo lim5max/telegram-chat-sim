@@ -19,6 +19,7 @@ import { Route as TabsMeRouteImport } from './routes/_tabs.me'
 import { Route as TabsMarketplaceRouteImport } from './routes/_tabs.marketplace'
 import { Route as TabsHomeRouteImport } from './routes/_tabs.home'
 import { Route as TabsChatsRouteImport } from './routes/_tabs.chats'
+import { Route as ChatChatIdAnalyticsRouteImport } from './routes/chat.$chatId.analytics'
 import { Route as ChatChatIdFeatureFeatureKeyRouteImport } from './routes/chat.$chatId.feature.$featureKey'
 
 const SubscriptionsRoute = SubscriptionsRouteImport.update({
@@ -70,6 +71,11 @@ const TabsChatsRoute = TabsChatsRouteImport.update({
   path: '/chats',
   getParentRoute: () => TabsRoute,
 } as any)
+const ChatChatIdAnalyticsRoute = ChatChatIdAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => ChatChatIdRoute,
+} as any)
 const ChatChatIdFeatureFeatureKeyRoute =
   ChatChatIdFeatureFeatureKeyRouteImport.update({
     id: '/feature/$featureKey',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/marketplace': typeof TabsMarketplaceRoute
   '/me': typeof TabsMeRoute
   '/chat/$chatId': typeof ChatChatIdRouteWithChildren
+  '/chat/$chatId/analytics': typeof ChatChatIdAnalyticsRoute
   '/chat/$chatId/feature/$featureKey': typeof ChatChatIdFeatureFeatureKeyRoute
 }
 export interface FileRoutesByTo {
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/marketplace': typeof TabsMarketplaceRoute
   '/me': typeof TabsMeRoute
   '/chat/$chatId': typeof ChatChatIdRouteWithChildren
+  '/chat/$chatId/analytics': typeof ChatChatIdAnalyticsRoute
   '/chat/$chatId/feature/$featureKey': typeof ChatChatIdFeatureFeatureKeyRoute
 }
 export interface FileRoutesById {
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/_tabs/marketplace': typeof TabsMarketplaceRoute
   '/_tabs/me': typeof TabsMeRoute
   '/chat/$chatId': typeof ChatChatIdRouteWithChildren
+  '/chat/$chatId/analytics': typeof ChatChatIdAnalyticsRoute
   '/chat/$chatId/feature/$featureKey': typeof ChatChatIdFeatureFeatureKeyRoute
 }
 export interface FileRouteTypes {
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/marketplace'
     | '/me'
     | '/chat/$chatId'
+    | '/chat/$chatId/analytics'
     | '/chat/$chatId/feature/$featureKey'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/marketplace'
     | '/me'
     | '/chat/$chatId'
+    | '/chat/$chatId/analytics'
     | '/chat/$chatId/feature/$featureKey'
   id:
     | '__root__'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/_tabs/marketplace'
     | '/_tabs/me'
     | '/chat/$chatId'
+    | '/chat/$chatId/analytics'
     | '/chat/$chatId/feature/$featureKey'
   fileRoutesById: FileRoutesById
 }
@@ -236,6 +248,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TabsChatsRouteImport
       parentRoute: typeof TabsRoute
     }
+    '/chat/$chatId/analytics': {
+      id: '/chat/$chatId/analytics'
+      path: '/analytics'
+      fullPath: '/chat/$chatId/analytics'
+      preLoaderRoute: typeof ChatChatIdAnalyticsRouteImport
+      parentRoute: typeof ChatChatIdRoute
+    }
     '/chat/$chatId/feature/$featureKey': {
       id: '/chat/$chatId/feature/$featureKey'
       path: '/feature/$featureKey'
@@ -263,10 +282,12 @@ const TabsRouteChildren: TabsRouteChildren = {
 const TabsRouteWithChildren = TabsRoute._addFileChildren(TabsRouteChildren)
 
 interface ChatChatIdRouteChildren {
+  ChatChatIdAnalyticsRoute: typeof ChatChatIdAnalyticsRoute
   ChatChatIdFeatureFeatureKeyRoute: typeof ChatChatIdFeatureFeatureKeyRoute
 }
 
 const ChatChatIdRouteChildren: ChatChatIdRouteChildren = {
+  ChatChatIdAnalyticsRoute: ChatChatIdAnalyticsRoute,
   ChatChatIdFeatureFeatureKeyRoute: ChatChatIdFeatureFeatureKeyRoute,
 }
 

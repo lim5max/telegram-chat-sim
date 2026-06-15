@@ -7,10 +7,6 @@
   "overrides": {},
   "routes": [
     {
-      "src": "/competitors/?",
-      "dest": "/competitors/index.html"
-    },
-    {
       "headers": {
         "cache-control": "public, max-age=31536000, immutable"
       },

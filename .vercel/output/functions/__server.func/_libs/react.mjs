@@ -19,6 +19,7 @@ function _mergeNamespaces(n, m) {
   }
   return Object.freeze(n);
 }
+var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
 function getDefaultExportFromCjs(x) {
   return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
 }
@@ -458,10 +459,10 @@ function requireReact() {
   return react.exports;
 }
 var reactExports = requireReact();
-const React__default = /* @__PURE__ */ getDefaultExportFromCjs(reactExports);
-const React = /* @__PURE__ */ _mergeNamespaces({
+const React = /* @__PURE__ */ getDefaultExportFromCjs(reactExports);
+const React$1 = /* @__PURE__ */ _mergeNamespaces({
   __proto__: null,
-  default: React__default
+  default: React
 }, [reactExports]);
 var jsxRuntime = { exports: {} };
 var reactJsxRuntime_production = {};
@@ -504,9 +505,10 @@ function requireJsxRuntime() {
 }
 var jsxRuntimeExports = requireJsxRuntime();
 export {
-  React__default as R,
+  React as R,
   requireReact as a,
-  React as b,
+  React$1 as b,
+  commonjsGlobal as c,
   getDefaultExportFromCjs as g,
   jsxRuntimeExports as j,
   reactExports as r

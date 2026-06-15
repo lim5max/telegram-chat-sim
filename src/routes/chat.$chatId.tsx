@@ -1,13 +1,14 @@
-import { createFileRoute, notFound, Outlet, useMatch } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, Outlet, useMatch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TopBar } from "@/components/TopBar";
 import { Toggle } from "@/components/Toggle";
 import { useChatsStore } from "@/store/chats";
 import { FEATURE_META, type FeatureKey, type Chat } from "@/data/chats";
-import { ChevronDown, TrendingUp } from "lucide-react";
+import { ChevronDown, ChevronRight, TrendingUp } from "lucide-react";
 import { FeatureIcon, ICON_GRADIENTS } from "@/components/FeatureIcon";
 import { FeatureSettings } from "@/components/FeatureSettings";
+import { getChatReport } from "@/data/analytics";
 
 
 export const Route = createFileRoute("/chat/$chatId")({
@@ -21,10 +22,11 @@ export const Route = createFileRoute("/chat/$chatId")({
 });
 
 function ChatLayout() {
-  // If a child route is active (e.g. /feature/$featureKey), render it via Outlet
-  // Otherwise render the chat details page
-  const childMatch = useMatch({ from: "/chat/$chatId/feature/$featureKey", shouldThrow: false });
-  if (childMatch) return <Outlet />;
+  // If a child route is active (feature settings or analytics), render it via
+  // Outlet. Otherwise render the chat details page.
+  const featureMatch = useMatch({ from: "/chat/$chatId/feature/$featureKey", shouldThrow: false });
+  const analyticsMatch = useMatch({ from: "/chat/$chatId/analytics", shouldThrow: false });
+  if (featureMatch || analyticsMatch) return <Outlet />;
   return <ChatDetails />;
 }
 
@@ -84,6 +86,9 @@ function ChatDetails() {
           </div>
         </div>
 
+        {/* ANALYTICS ENTRY */}
+        <AnalyticsEntry chat={chat} chatId={chatId} />
+
         {/* ACTIVE FEATURES */}
         <SectionTitle>Включённые навыки</SectionTitle>
         {activeKeys.length === 0 && (
@@ -142,6 +147,28 @@ function Mini({ value, label }: { value: string; label: string }) {
       <div className="text-[18px] font-bold">{value}</div>
       <div className="text-[10px] text-muted-foreground mt-0.5">{label}</div>
     </div>
+  );
+}
+
+function AnalyticsEntry({ chat, chatId }: { chat: Chat; chatId: string }) {
+  const r = getChatReport(chat);
+  return (
+    <Link
+      to="/chat/$chatId/analytics"
+      params={{ chatId }}
+      className="glass-card rounded-[18px] p-3.5 flex items-center gap-3 active:scale-[0.99] transition"
+    >
+      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 text-[20px] gradient-primary">
+        📊
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold">Отчёт за 2 недели</div>
+        <div className="text-[11px] text-muted-foreground truncate">
+          {r.periodLabel} · {r.engagement.activeShare}% активных · вовлечённость, графики, токсичность
+        </div>
+      </div>
+      <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+    </Link>
   );
 }
 
